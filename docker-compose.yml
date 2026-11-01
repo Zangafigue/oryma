@@ -29,15 +29,17 @@ services:
       SYNAPSE_REGISTRATION_SECRET: ${SYNAPSE_REGISTRATION_SECRET:?Configure SYNAPSE_REGISTRATION_SECRET in .env}
       SYNAPSE_MACAROON_SECRET: ${SYNAPSE_MACAROON_SECRET:?Configure SYNAPSE_MACAROON_SECRET in .env}
       SYNAPSE_FORM_SECRET: ${SYNAPSE_FORM_SECRET:?Configure SYNAPSE_FORM_SECRET in .env}
+      OIDC_SYNAPSE_SECRET: ${OIDC_SYNAPSE_SECRET:?Configure OIDC_SYNAPSE_SECRET in .env}
       SYNAPSE_REPORT_STATS: "no"
     volumes:
       - synapse-data:/data
+      - caddy-data:/caddy:ro
     networks: [internal]
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8008/health >/dev/null 2>&1 || wget -qO- http://127.0.0.1:8008/_matrix/client/versions >/dev/null 2>&1"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8008/_matrix/client/versions', timeout=3).read()"]
       interval: 15s
       timeout: 5s
       retries: 12
@@ -52,7 +54,7 @@ services:
     cap_drop: [ALL]
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.1
+    build: ./keycloak
     restart: unless-stopped
     command: start-dev --import-realm --http-relative-path=/auth
     environment:
@@ -66,20 +68,18 @@ services:
       KC_HTTP_ENABLED: "true"
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth
-    volumes:
-      - ./keycloak/realm-export.json:/opt/keycloak/data/import/oryma-realm.json:ro
+      ORYMA_HOST: ${ORYMA_HOST:?Configure ORYMA_HOST in .env}
+      OIDC_SYNAPSE_SECRET: ${OIDC_SYNAPSE_SECRET:?Configure OIDC_SYNAPSE_SECRET in .env}
     networks: [internal]
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200' <&3"]
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200' <&3"]
       interval: 15s
       timeout: 5s
       retries: 12
       start_period: 45s
-    security_opt: [no-new-privileges:true]
-
   admin-api:
     build: ./admin-api
     restart: unless-stopped
@@ -113,7 +113,10 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
-    networks: [external, internal]
+    networks:
+      external: {}
+      internal:
+        aliases: [oryma.local]
     depends_on:
       synapse:
         condition: service_healthy

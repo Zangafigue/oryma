@@ -10,7 +10,7 @@ Voir le [registre](README.md). Base `/api/v1`, JSON `snake_case`, UUID, dates IS
 
 ### Authentification
 
-Jeton porteur émis par Keycloak (`Authorization: Bearer …`). Le service valide la signature (clés publiques du royaume), l’émetteur, l’audience et l’expiration, puis lit le rôle (`admin` ou `agent`). Le contrôle est fait dans une dépendance commune.
+Jeton porteur émis par Keycloak (`Authorization: Bearer …`). Le service valide la signature (JWKS), l’émetteur, l’audience et l’expiration, puis lit le rôle dans `realm_access.roles`. Les valeurs exactes et les trois clients sont dans le [contrat OIDC](keycloak-oidc.md). Le contrôle est fait dans une dépendance commune.
 
 ### Enveloppe de succès
 
@@ -134,6 +134,8 @@ Rôle : `agent`. « Mes salles » : salles créées par l’appelant avec niveau
 ### GET `/audit`
 
 Rôle : `admin`. Filtres : `action`, `acteur_id`, `depuis`, `jusqu_a`. Lecture seule. Pas d’adresse IP ni de contenu de message.
+
+Un `403` pour rôle insuffisant écrit `TENTATIVE_ACCES_REFUSE`, avec la route et le motif uniquement. Ni l’adresse IP, ni le jeton, ni un identifiant de session ne sont journalisés.
 
 ## 6. Annuaire
 

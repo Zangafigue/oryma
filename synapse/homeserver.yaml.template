@@ -51,3 +51,16 @@ retention:
     max_lifetime: 7d
 trusted_key_servers: []
 suppress_key_server_warning: true
+
+oidc_providers:
+  - idp_id: keycloak
+    idp_name: "Compte professionnel Oryma"
+    issuer: "https://__ORYMA_HOST__/auth/realms/oryma"
+    client_id: "synapse"
+    client_secret: "__OIDC_SYNAPSE_SECRET__"
+    scopes: ["openid", "profile"]
+    user_mapping_provider:
+      config:
+        subject_claim: "sub"
+        localpart_template: "{{ user.preferred_username }}"
+        display_name_template: "{{ user.name }}"

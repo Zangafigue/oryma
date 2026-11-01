@@ -37,7 +37,7 @@ Une colonne est `NOT NULL` sauf mention contraire. `revoque_le` et `revoque_par`
 | `role_agent` | `admin`, `agent` |
 | `statut_agent` | `actif`, `revoque` |
 | `niveaux_classification.code` | `DIFFUSION_RESTREINTE`, `CONFIDENTIEL` |
-| `audit_log.action` | `ENROLEMENT`, `REVOCATION`, `CHANGEMENT_ROLE`, `CREATION_SALLE` |
+| `audit_log.action` | `ENROLEMENT`, `REVOCATION`, `CHANGEMENT_ROLE`, `CREATION_SALLE`, `TENTATIVE_ACCES_REFUSE` |
 
 ## Schéma SQL de référence
 
