@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TYPE role_agent AS ENUM ('admin', 'agent');
 CREATE TYPE statut_agent AS ENUM ('actif', 'revoque');
 

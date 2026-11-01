@@ -1,0 +1,28 @@
+{
+  admin off
+  auto_https disable_redirects
+}
+
+https://{env.ORYMA_HOST} {
+  tls internal
+
+  header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "no-referrer"
+    -Server
+  }
+
+  @matrix path /_matrix/* /_synapse/*
+  reverse_proxy @matrix synapse:8008
+
+  @keycloak path /auth/*
+  reverse_proxy @keycloak keycloak:8080
+
+  reverse_proxy element:80
+}
+
+http://{env.ORYMA_HOST} {
+  redir https://{env.ORYMA_HOST}{uri} permanent
+}
