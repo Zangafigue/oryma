@@ -31,6 +31,7 @@ services:
       SYNAPSE_FORM_SECRET: ${SYNAPSE_FORM_SECRET:?Configure SYNAPSE_FORM_SECRET in .env}
       OIDC_SYNAPSE_SECRET: ${OIDC_SYNAPSE_SECRET:?Configure OIDC_SYNAPSE_SECRET in .env}
       SYNAPSE_REPORT_STATS: "no"
+      SSL_CERT_FILE: /caddy/caddy/pki/authorities/local/root.crt
     volumes:
       - synapse-data:/data
       - caddy-data:/caddy:ro
