@@ -36,13 +36,13 @@ Toute divergence est corrigée dans la même pull request.
 
 | Contrat | Producteur | Consommateur | Statut | Preuve attendue |
 |---|---|---|---|---|
-| Authentification par jeton Keycloak | AdminService / B | Console | Proposé | Test jeton valide, expiré, mauvais rôle |
+| Authentification par jeton Keycloak | AdminService / B | Console | Accepté | Test jeton valide, invalide, expiré, mauvaise audience et mauvais rôle |
 | `POST /agents` (enrôlement) | EnrollmentService / B | Console | Proposé | OpenAPI + test d’intégration avec TOTP imposé |
 | `POST /agents/{id}/revoke` | RevocationService / B | Console | Proposé | Test de révocation à deux appareils + test d’idempotence |
 | `POST /rooms` et `GET /rooms` | RoomService / B | Console | Proposé | Test de création de salle + purge à l’échéance |
 | `GET /audit` | AuditLedger / B | Console | Proposé | Test en ajout seul |
 | `GET /health` | AdminService / B | Deployment / A | Proposé | Contrôle d’état dans Compose |
-| Royaume Keycloak (clients et rôles) | IdentityProvider / A | AdminService / B | Proposé | `realm-export.json` + test de connexion |
+| Royaume Keycloak (clients et rôles) | IdentityProvider / A | AdminService / B | Accepté | `realm-export.json` + test de connexion |
 | `GET /directory` | — | — | Coupé | — |
 
 Le nom après `/` indique le responsable humain principal selon `CONTRIBUTING.md` ; le nom avant `/` est le composant propriétaire.
@@ -69,6 +69,18 @@ Le nom après `/` indique le responsable humain principal selon `CONTRIBUTING.md
   "request_id": "7b1c2d34-0f1e-4a8b-9c3d-2e5f6a7b8c9d"
 }
 ```
+
+### Contrat du jeton Keycloak consommé par l’API
+
+- Issuer exact : `https://${ORYMA_HOST}/auth/realms/oryma`.
+- Découverte OIDC : `https://${ORYMA_HOST}/auth/realms/oryma/.well-known/openid-configuration`.
+- JWKS public : `https://${ORYMA_HOST}/auth/realms/oryma/protocol/openid-connect/certs`.
+- Audience obligatoire : `admin-api`.
+- Client appelant : `console`; le jeton doit porter `azp: console` et `typ: Bearer`.
+- Signature RS256 vérifiée avec le JWKS Keycloak ; `exp` requis et `nbf` vérifié s’il est présent.
+- Les rôles proviennent uniquement de `realm_access.roles`. Les opérations sensibles exigent `admin`.
+- En Compose, l’API récupère le même JWKS via le nom de service interne `keycloak`; cet accès réseau ne change pas la validation de l’issuer public.
+- Un refus de rôle répond `403` (`ERR-014`) et inscrit `TENTATIVE_ACCES_REFUSE` avec uniquement la route et le motif `ROLE_INSUFFISANT`.
 
 ## Processus contract-first
 

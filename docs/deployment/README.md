@@ -49,6 +49,8 @@ docker compose up -d
 
 À vérifier après installation : tous les services sont `healthy`, Element s’ouvre en HTTPS, la connexion SSO avec TOTP fonctionne avec un compte de démonstration.
 
+Au démarrage, `admin-api` applique les migrations SQL numérotées avant de lancer FastAPI. Une migration en échec empêche le service de démarrer et reste visible dans ses journaux.
+
 ## Réseaux, volumes et secrets
 
 - Réseau `externe` : Caddy seulement. Réseau `interne` sans accès sortant : tous les autres services.
