@@ -37,7 +37,7 @@ Une colonne est `NOT NULL` sauf mention contraire. `revoque_le` et `revoque_par`
 | `role_agent` | `admin`, `agent` |
 | `statut_agent` | `actif`, `revoque` |
 | `niveaux_classification.code` | `DIFFUSION_RESTREINTE`, `CONFIDENTIEL` |
-| `audit_log.action` | `ENROLEMENT`, `REVOCATION`, `CHANGEMENT_ROLE`, `CREATION_SALLE` |
+| `audit_log.action` | `ENROLEMENT`, `REVOCATION`, `CHANGEMENT_ROLE`, `CREATION_SALLE`, `TENTATIVE_ACCES_REFUSE` |
 
 ## Schéma SQL de référence
 
@@ -120,6 +120,8 @@ Une salle classifiée créée par le service. `niveau` est nul pour une salle or
 ### `audit_log`
 
 Une ligne par action d’administration. `details` ne contient ni adresse IP, ni contenu de message, ni secret. Le compte de base du service a uniquement les droits d’insertion et de lecture sur cette table.
+
+Pour `TENTATIVE_ACCES_REFUSE`, `details` contient exactement `route` et `motif` (valeur `ROLE_INSUFFISANT`). Aucun acteur, IP, jeton, en-tête d’autorisation ou identifiant de session n’est enregistré pour ce refus.
 
 ## Données visibles du serveur Matrix
 

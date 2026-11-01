@@ -87,6 +87,10 @@ services:
       ADMINAPI_DATABASE_URL: postgresql://adminapi:${ADMINAPI_DB_PASSWORD:?Configure ADMINAPI_DB_PASSWORD in .env}@postgres:5432/adminapi
       KEYCLOAK_HEALTHCHECK_URL: http://keycloak:9000/health/ready
       SYNAPSE_HEALTHCHECK_URL: http://synapse:8008/_matrix/client/versions
+      OIDC_ISSUER: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth/realms/oryma
+      OIDC_AUDIENCE: admin-api
+      OIDC_CLIENT_ID: console
+      OIDC_JWKS_URL: http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs
     networks: [internal]
     depends_on:
       postgres:

@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 
+from admin_api.auth import JwksClient
 from admin_api.config import Settings
 from admin_api.errors import ApiError
 from admin_api.health import check_database, check_http_endpoint
@@ -12,6 +13,7 @@ from admin_api.health import check_database, check_http_endpoint
 async def render_api_error(request: Request, error: ApiError) -> JSONResponse:
     return JSONResponse(
         status_code=error.status_code,
+        headers={"WWW-Authenticate": "Bearer"} if error.status_code == 401 else None,
         content={
             "error": {
                 "code": error.code,
@@ -26,6 +28,7 @@ async def render_api_error(request: Request, error: ApiError) -> JSONResponse:
 def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Oryma Admin API", version="0.1.0")
     app.state.settings = settings or Settings.from_environment()
+    app.state.jwks_client = JwksClient(app.state.settings.oidc_jwks_url or "")
     app.add_exception_handler(ApiError, render_api_error)
 
     @app.middleware("http")
