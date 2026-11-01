@@ -1,0 +1,53 @@
+server_name: "__ORYMA_HOST__"
+pid_file: /data/homeserver.pid
+public_baseurl: "https://__ORYMA_HOST__/"
+serve_server_wellknown: false
+report_stats: false
+
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client]
+        compress: false
+
+database:
+  name: psycopg2
+  args:
+    user: synapse
+    password: "__SYNAPSE_DB_PASSWORD__"
+    database: synapse
+    host: postgres
+    cp_min: 5
+    cp_max: 10
+
+log_config: "/data/__ORYMA_HOST__.log.config"
+media_store_path: /data/media_store
+signing_key_path: "/data/__ORYMA_HOST__.signing.key"
+macaroon_secret_key: "__SYNAPSE_MACAROON_SECRET__"
+form_secret: "__SYNAPSE_FORM_SECRET__"
+registration_shared_secret: "__SYNAPSE_REGISTRATION_SECRET__"
+
+enable_registration: false
+enable_registration_without_verification: false
+enable_guest_access: false
+password_config:
+  enabled: false
+  localdb_enabled: false
+
+federation_domain_whitelist: []
+allow_public_rooms_without_auth: false
+allow_public_rooms_over_federation: false
+presence:
+  enabled: false
+url_preview_enabled: false
+ip_range_whitelist: []
+retention:
+  enabled: true
+  default_policy:
+    min_lifetime: 1d
+    max_lifetime: 7d
+trusted_key_servers: []
+suppress_key_server_warning: true
