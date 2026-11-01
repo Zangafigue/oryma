@@ -18,6 +18,28 @@ ISSUER = "https://oryma.local/auth/realms/oryma"
 AUDIENCE = "admin-api"
 
 
+def test_settings_load_keycloak_contract_without_confusing_service_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("KEYCLOAK_ISSUER", ISSUER)
+    monkeypatch.setenv(
+        "KEYCLOAK_JWKS_INTERNAL_URL",
+        "http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs",
+    )
+    monkeypatch.setenv("KEYCLOAK_ADMIN_CLIENT_ID", "admin-api")
+    monkeypatch.setenv("KEYCLOAK_ADMIN_CLIENT_SECRET", "service-client-secret")
+    monkeypatch.setenv("OIDC_CLIENT_ID", "admin-api")
+
+    settings = Settings.from_environment()
+
+    assert settings.oidc_issuer == ISSUER
+    assert settings.oidc_jwks_url == (
+        "http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs"
+    )
+    assert settings.oidc_audience == AUDIENCE
+    assert settings.oidc_client_id == "console"
+
+
 @pytest.fixture
 def signing_key() -> tuple[Any, PyJWK]:
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)

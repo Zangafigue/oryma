@@ -59,7 +59,7 @@ Possède **INV-07** et **INV-08**. Seul le proxy publie un port ; les secrets so
 | INV-03 Identité vérifiée | IdentityProvider | Inscription fermée, SSO seul, royaume préconfiguré |
 | INV-04 Second facteur obligatoire | IdentityProvider | Action requise TOTP |
 | INV-05 Autorisation côté serveur | AdminService | Dépendance commune jeton + rôle |
-| INV-06 Révocation immédiate et complète | AdminService | Séquence en quatre étapes rejouables |
+| INV-06 Révocation immédiate et complète | AdminService | Séquence en six étapes rejouables |
 | INV-07 Isolation et souveraineté | Deployment | Réseaux Docker, fédération coupée, test de ports fermés |
 | INV-08 Secrets et clés hors dépôt | Deployment | `.gitignore`, génération au premier lancement |
 | INV-09 Minimisation des métadonnées | MessageServer | Réglages Synapse, journaux d’accès coupés |

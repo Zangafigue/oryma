@@ -2,10 +2,13 @@ import asyncio
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request, Response
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from admin_api.auth import JwksClient
 from admin_api.config import Settings
+from admin_api.enrollment import EnrollmentService
+from admin_api.enrollment import router as enrollment_router
 from admin_api.errors import ApiError
 from admin_api.health import check_database, check_http_endpoint
 
@@ -25,11 +28,38 @@ async def render_api_error(request: Request, error: ApiError) -> JSONResponse:
     )
 
 
+async def render_validation_error(
+    request: Request,
+    error: RequestValidationError,
+) -> JSONResponse:
+    fields = [
+        {
+            "champ": ".".join(str(part) for part in item["loc"] if part != "body"),
+            "erreur": item["type"],
+        }
+        for item in error.errors()
+    ]
+    return JSONResponse(
+        status_code=422,
+        content={
+            "error": {
+                "code": "ERR-023",
+                "message": "Les données envoyées sont invalides.",
+                "details": {"champs": fields},
+            },
+            "request_id": request.state.request_id,
+        },
+    )
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Oryma Admin API", version="0.1.0")
     app.state.settings = settings or Settings.from_environment()
     app.state.jwks_client = JwksClient(app.state.settings.oidc_jwks_url or "")
+    app.state.enrollment_service = EnrollmentService(app.state.settings)
     app.add_exception_handler(ApiError, render_api_error)
+    app.add_exception_handler(RequestValidationError, render_validation_error)
+    app.include_router(enrollment_router)
 
     @app.middleware("http")
     async def add_request_id(request: Request, call_next) -> Response:

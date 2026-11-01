@@ -34,7 +34,7 @@ Aucune session d’agent n’est établie sans TOTP.
 Chaque appel d’administration DOIT valider le jeton (signature, émetteur, audience, expiration) et le rôle requis. Un rôle transmis par le client ne remplace jamais cette vérification.
 
 **INV-06 — Révocation immédiate et complète**  
-La révocation DOIT fermer la porte d’entrée (Keycloak) avant le nettoyage côté Matrix : désactivation de l’utilisateur, fermeture des sessions, suppression de tous ses appareils, désactivation du compte. Chaque étape est rejouable et son résultat est visible.
+La révocation DOIT exécuter six étapes dans cet ordre : désactivation de l’utilisateur Keycloak, fermeture des sessions Keycloak, suppression de tous ses appareils Synapse, désactivation du compte Synapse, mise à jour du statut en base, puis audit. Chaque étape est rejouable et son résultat est visible.
 
 ### Isolation et secrets
 
@@ -81,7 +81,7 @@ Les développements, tests et démonstrations n’utilisent que des comptes et d
 | Serveur curieux ou compromis | Chiffrement de bout en bout (INV-01) | Métadonnées visibles (INV-09) |
 | Intrus non enrôlé | Enrôlement préalable et SSO (INV-03) | — |
 | Vol de mot de passe | TOTP obligatoire (INV-04) | Hameçonnage du TOTP : WebAuthn non retenu |
-| Agent révoqué | Révocation en quatre étapes (INV-06) | Il garde l’historique déjà reçu sur son appareil |
+| Agent révoqué | Révocation en six étapes (INV-06) | Il garde l’historique déjà reçu sur son appareil |
 | Administrateur Keycloak malveillant | Vérification des appareils, audit (INV-10) | Il peut ouvrir une session à la place d’un agent depuis un nouvel appareil |
 | Appel d’administration forgé | Validation du jeton et du rôle (INV-05) | — |
 | Fuite de secret | `.gitignore`, détection avant envoi (INV-08) | — |

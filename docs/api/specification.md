@@ -67,7 +67,9 @@ Effets : création de l’utilisateur Keycloak (activé, TOTP à configurer, rô
 
 Réponse `201` : l’agent et `mot_de_passe_temporaire`, **affiché une seule fois, jamais stocké ni journalisé**, à transmettre par un canal convenu.
 
-Erreurs : `ERR-013`, `ERR-014`, `422` pour un corps invalide, `ERR-500`.
+Erreurs : `ERR-013`, `ERR-014`, `ERR-021` si le ministère est introuvable, `ERR-022` si l’identifiant est déjà utilisé, `ERR-023` si le corps est invalide, `ERR-500`.
+
+Le rôle est strictement limité à `admin` ou `agent`. Si une étape échoue après la création Keycloak mais avant l’écriture complète en base, le compte Keycloak est désactivé ou supprimé en compensation afin d’éviter un compte orphelin.
 
 ### GET `/agents`
 
@@ -105,7 +107,7 @@ Réponse `200` lorsque toutes les étapes réussissent :
 }
 ```
 
-En cas d’échec d’une étape : réponse `502` avec `ERR-033` et `details.etapes` (l’étape en échec et les suivantes `ignoree`). Un nouvel appel reprend sans effet de bord. Un agent déjà révoqué retourne son état (`ERR-032` n’est pas une erreur bloquante).
+En cas d’échec d’une étape : réponse `502` avec `ERR-033` et `details.etapes` (l’étape en échec et les suivantes `ignoree`). Un nouvel appel reprend sans répéter les effets déjà réalisés. Un agent déjà révoqué retourne `200` avec son état (`ERR-032` n’est pas une erreur bloquante), sans effet de bord.
 
 ## 4. Salles classifiées
 
@@ -121,9 +123,9 @@ Rôle : `agent` ou `admin`. Corps :
 { "nom": "Réunion DG", "niveau": "CONFIDENTIEL", "membres": ["<agent_id>", "<agent_id>"] }
 ```
 
-Le service refuse si l’appelant ou un membre n’est pas un agent actif (`ERR-042`), si le niveau est inconnu (`ERR-041`). Il crée la salle via le compte de service ([ADR-008](../adr/008-classified-rooms-service-account.md)) et enregistre `salles` et l’audit `CREATION_SALLE`. Le nom retourné porte le niveau (par exemple « [Confidentiel] Réunion DG »).
+Le service refuse si l’appelant ou un membre n’est pas un agent actif (`ERR-042`), si le niveau est inconnu (`ERR-041`). Il crée la salle via le compte de service ([ADR-008](../adr/008-classified-rooms-service-account.md)) avec le chiffrement et la rétention dans l’état initial, puis enregistre `salles` et l’audit `CREATION_SALLE`. `salles.duree_vie_secondes` conserve la durée effectivement appliquée comme instantané ; `niveaux_classification` reste la source de vérité pour les nouvelles salles. Le nom retourné porte le niveau (par exemple « [Confidentiel] Réunion DG »).
 
-Réponse `201` : `{ "room_id": "…", "nom": "…", "niveau": "CONFIDENTIEL", "duree_vie_secondes": 86400 }`. Erreur `ERR-043` si la création échoue : aucune salle partielle n’est enregistrée.
+Réponse `201` : `{ "room_id": "…", "nom": "…", "niveau": "CONFIDENTIEL", "duree_vie_secondes": 86400 }`. En cas d’échec avant le `201` après création côté Synapse, le service tente une suppression via un accès d’administration distinct et limité. Erreur `ERR-043` si la création ou la compensation échoue ; si la suppression échoue, aucune salle n’est enregistrée comme créée et une trace technique est conservée dans `reconciliation_salles`.
 
 ### GET `/rooms`
 
