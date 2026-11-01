@@ -2,14 +2,31 @@ import asyncio
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 
 from admin_api.config import Settings
+from admin_api.errors import ApiError
 from admin_api.health import check_database, check_http_endpoint
+
+
+async def render_api_error(request: Request, error: ApiError) -> JSONResponse:
+    return JSONResponse(
+        status_code=error.status_code,
+        content={
+            "error": {
+                "code": error.code,
+                "message": error.message,
+                "details": error.details,
+            },
+            "request_id": request.state.request_id,
+        },
+    )
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Oryma Admin API", version="0.1.0")
     app.state.settings = settings or Settings.from_environment()
+    app.add_exception_handler(ApiError, render_api_error)
 
     @app.middleware("http")
     async def add_request_id(request: Request, call_next) -> Response:
@@ -19,6 +36,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         except ValueError:
             request_id = str(uuid4())
 
+        request.state.request_id = request_id
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         return response
