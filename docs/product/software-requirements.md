@@ -126,9 +126,12 @@ La classification s’applique à la **salle**, pas au message individuel : tous
 | ERR-012 | Code TOTP erroné | Refuser, expliquer, limiter les essais (blocage temporaire par Keycloak) |
 | ERR-013 | Jeton absent, invalide ou expiré | Retourner HTTP 401 |
 | ERR-014 | Rôle insuffisant | Retourner HTTP 403 et inscrire la tentative à l’audit |
+| ERR-021 | Ministère introuvable lors de l’enrôlement | Retourner HTTP 404 |
+| ERR-022 | Identifiant déjà utilisé lors de l’enrôlement | Retourner HTTP 409 |
+| ERR-023 | Corps de requête invalide | Retourner HTTP 422 avec les seuls noms de champs et types d’erreur ; ne pas refléter les valeurs reçues |
 | ERR-031 | Agent introuvable | Retourner HTTP 404 |
-| ERR-032 | Révocation d’un agent déjà révoqué | Retourner l’état existant sans effet de bord |
-| ERR-033 | Étape de révocation en échec | Signaler l’étape en échec, conserver les étapes réussies, permettre de réessayer |
+| ERR-032 | Révocation d’un agent déjà révoqué | Retourner HTTP 200 avec l’état existant, sans effet de bord |
+| ERR-033 | Étape de révocation en échec | Retourner HTTP 502 avec le détail des étapes, conserver les étapes réussies, permettre de réessayer sans répéter leurs effets |
 | ERR-041 | Niveau de classification inconnu | Retourner HTTP 422 |
 | ERR-042 | Membre ou demandeur non agent actif | Retourner HTTP 422 sans créer de salle |
 | ERR-043 | Création de salle impossible (compte de service, Synapse) | Retourner une erreur corrélée ; ne pas enregistrer de salle partielle |

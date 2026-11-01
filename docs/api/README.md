@@ -37,9 +37,9 @@ Toute divergence est corrigée dans la même pull request.
 | Contrat | Producteur | Consommateur | Statut | Preuve attendue |
 |---|---|---|---|---|
 | Authentification par jeton Keycloak | AdminService / B | Console | Accepté | Test jeton valide, invalide, expiré, mauvaise audience et mauvais rôle |
-| `POST /agents` (enrôlement) | EnrollmentService / B | Console | Proposé | OpenAPI + test d’intégration avec TOTP imposé |
-| `POST /agents/{id}/revoke` | RevocationService / B | Console | Proposé | Test de révocation à deux appareils + test d’idempotence |
-| `POST /rooms` et `GET /rooms` | RoomService / B | Console | Proposé | Test de création de salle + purge à l’échéance |
+| `POST /agents` (enrôlement) | EnrollmentService / B | Console | Accepté | OpenAPI + test d’intégration avec TOTP imposé |
+| `POST /agents/{id}/revoke` | RevocationService / B | Console | Accepté | Test de révocation à deux appareils + test d’idempotence |
+| `POST /rooms` et `GET /rooms` | RoomService / B | Console | Accepté | Test de création de salle + purge à l’échéance |
 | `GET /audit` | AuditLedger / B | Console | Proposé | Test en ajout seul |
 | `GET /health` | AdminService / B | Deployment / A | Proposé | Contrôle d’état dans Compose |
 | Royaume Keycloak (clients et rôles) | IdentityProvider / A | AdminService / B | Accepté | `realm-export.json` + test de connexion |
@@ -80,6 +80,7 @@ Le nom après `/` indique le responsable humain principal selon `CONTRIBUTING.md
 - Signature RS256 vérifiée avec le JWKS Keycloak ; `exp` requis et `nbf` vérifié s’il est présent.
 - Les rôles proviennent uniquement de `realm_access.roles`. Les opérations sensibles exigent `admin`.
 - En Compose, l’API récupère le même JWKS via le nom de service interne `keycloak`; cet accès réseau ne change pas la validation de l’issuer public.
+- Le client de service `admin-api` utilise ses credentials client uniquement pour l’API d’administration Keycloak. Son compte de service doit recevoir dans le royaume `oryma` les rôles `manage-users`, `query-users` et `view-realm` nécessaires à l’enrôlement ; il ne remplace jamais le client utilisateur `console` pour valider `azp`.
 - Un refus de rôle répond `403` (`ERR-014`) et inscrit `TENTATIVE_ACCES_REFUSE` avec uniquement la route et le motif `ROLE_INSUFFISANT`.
 
 ## Processus contract-first

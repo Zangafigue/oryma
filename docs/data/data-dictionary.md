@@ -74,11 +74,28 @@ CREATE TABLE niveaux_classification (
 );
 
 CREATE TABLE salles (
-  room_id  TEXT PRIMARY KEY,
-  nom      TEXT NOT NULL,
-  niveau   TEXT REFERENCES niveaux_classification(code),
-  cree_par UUID REFERENCES agents(id),
-  cree_le  TIMESTAMPTZ NOT NULL DEFAULT now()
+  room_id              TEXT PRIMARY KEY,
+  nom                  TEXT NOT NULL,
+  niveau               TEXT REFERENCES niveaux_classification(code),
+  duree_vie_secondes   INT,
+  cree_par             UUID REFERENCES agents(id),
+  cree_le              TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (
+    (niveau IS NULL AND duree_vie_secondes IS NULL)
+    OR (niveau IS NOT NULL AND duree_vie_secondes > 0)
+  )
+);
+
+CREATE TABLE reconciliation_salles (
+  room_id   TEXT PRIMARY KEY,
+  statut    TEXT NOT NULL DEFAULT 'A_RECONCILIER'
+            CHECK (statut IN ('A_RECONCILIER', 'RESOLUE')),
+  cree_le   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  resolu_le TIMESTAMPTZ,
+  CHECK (
+    (statut = 'A_RECONCILIER' AND resolu_le IS NULL)
+    OR (statut = 'RESOLUE' AND resolu_le IS NOT NULL)
+  )
 );
 
 CREATE TABLE audit_log (
@@ -115,7 +132,11 @@ Valeurs de départ : `DIFFUSION_RESTREINTE`, 7 jours (604 800 s) ; `CONFIDENTIEL
 
 ### `salles`
 
-Une salle classifiée créée par le service. `niveau` est nul pour une salle ordinaire non enregistrée (non applicable, les salles ordinaires ne sont pas listées). Le niveau est aussi présent dans le nom de la salle côté Matrix.
+Une salle classifiée créée par le service. `duree_vie_secondes` est l’instantané de la durée effectivement appliquée à la création ; la source de vérité pour les nouvelles salles reste `niveaux_classification`. `niveau` et sa durée sont nuls pour une salle ordinaire non enregistrée (non applicable, les salles ordinaires ne sont pas listées). Le niveau est aussi présent dans le nom de la salle côté Matrix.
+
+### `reconciliation_salles`
+
+Trace technique des salles que le compte Synapse d’administration n’a pas pu supprimer après l’échec d’une création. Elle ne contient ni contenu de message ni secret et permet une réconciliation ultérieure.
 
 ### `audit_log`
 

@@ -49,11 +49,12 @@ Un conteneur, trois bases (`synapse`, `keycloak`, `adminapi`), un compte par bas
 
 ## Architecture des données
 
-La base `adminapi` contient cinq tables. Synapse et Keycloak gèrent leurs propres tables.
+La base `adminapi` contient les tables métier et la trace technique de réconciliation des créations de salles. Synapse et Keycloak gèrent leurs propres tables.
 
 ```text
 ministeres 1───n agents 1───n audit_log (acteur, cible)
 niveaux_classification 1───n salles n───1 agents (créateur)
+salles ──> reconciliation_salles (room_id si compensation échouée)
 ```
 
 ### Contraintes structurantes
