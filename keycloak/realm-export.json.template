@@ -71,5 +71,15 @@
       "directAccessGrantsEnabled": false,
       "clientAuthenticatorType": "client-secret"
     }
+  ],
+  "users": [
+    {
+      "username": "service-account-admin-api",
+      "enabled": true,
+      "serviceAccountClientId": "admin-api",
+      "clientRoles": {
+        "realm-management": ["manage-users", "query-users", "view-realm"]
+      }
+    }
   ]
 }
