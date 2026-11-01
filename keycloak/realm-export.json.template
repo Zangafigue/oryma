@@ -44,7 +44,9 @@
       "redirectUris": ["https://__ORYMA_HOST__/admin/*"],
       "webOrigins": ["https://__ORYMA_HOST__"],
       "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
       "attributes": {"pkce.code.challenge.method": "S256"},
       "protocolMappers": [
         {
@@ -62,8 +64,10 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
+      "secret": "__ADMIN_API_OIDC_SECRET__",
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "clientAuthenticatorType": "client-secret"
     }

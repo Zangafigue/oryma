@@ -43,7 +43,10 @@ allow_public_rooms_over_federation: false
 presence:
   enabled: false
 url_preview_enabled: false
-ip_range_whitelist: []
+# Synapse blocks private networks by default. Caddy is the only intentional
+# internal OIDC destination, on the fixed Docker subnet declared in Compose.
+ip_range_whitelist:
+  - 172.21.0.0/16
 retention:
   enabled: true
   default_policy:
@@ -55,10 +58,16 @@ suppress_key_server_warning: true
 oidc_providers:
   - idp_id: keycloak
     idp_name: "Compte professionnel Oryma"
+    discover: false
     issuer: "https://__ORYMA_HOST__/auth/realms/oryma"
     client_id: "synapse"
     client_secret: "__OIDC_SYNAPSE_SECRET__"
     scopes: ["openid", "profile"]
+    # Les endpoints OIDC restent en HTTPS, exigence vérifiée par Synapse.
+    # L'API d'administration utilise séparément son JWKS interne Compose.
+    authorization_endpoint: "https://__ORYMA_HOST__/auth/realms/oryma/protocol/openid-connect/auth"
+    token_endpoint: "https://__ORYMA_HOST__/auth/realms/oryma/protocol/openid-connect/token"
+    jwks_uri: "https://__ORYMA_HOST__/auth/realms/oryma/protocol/openid-connect/certs"
     user_mapping_provider:
       config:
         subject_claim: "sub"

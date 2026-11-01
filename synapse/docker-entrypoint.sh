@@ -1,6 +1,16 @@
 #!/bin/sh
 set -eu
 
+ORYMA_CADDY_CA=/caddy/caddy/pki/authorities/local/root.crt
+
+if [ ! -r "$ORYMA_CADDY_CA" ]; then
+  echo "La CA interne de Caddy est introuvable : démarrez Caddy avant Synapse." >&2
+  exit 1
+fi
+
+cp "$ORYMA_CADDY_CA" /usr/local/share/ca-certificates/oryma-caddy.crt
+update-ca-certificates >/dev/null
+
 if [ ! -f /data/.oryma-config-ready ]; then
   /start.py generate
 

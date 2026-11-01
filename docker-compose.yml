@@ -39,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      caddy:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8008/_matrix/client/versions', timeout=3).read()"]
       interval: 15s
@@ -71,12 +73,13 @@ services:
       KC_HOSTNAME: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth
       ORYMA_HOST: ${ORYMA_HOST:?Configure ORYMA_HOST in .env}
       OIDC_SYNAPSE_SECRET: ${OIDC_SYNAPSE_SECRET:?Configure OIDC_SYNAPSE_SECRET in .env}
+      ADMIN_API_OIDC_SECRET: ${ADMIN_API_OIDC_SECRET:?Configure ADMIN_API_OIDC_SECRET in .env}
     networks: [internal]
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200' <&3"]
+      test: ["CMD", "/bin/bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200' <&3"]
       interval: 15s
       timeout: 5s
       retries: 12
@@ -86,7 +89,11 @@ services:
     restart: unless-stopped
     environment:
       ADMINAPI_DATABASE_URL: postgresql://adminapi:${ADMINAPI_DB_PASSWORD:?Configure ADMINAPI_DB_PASSWORD in .env}@postgres:5432/adminapi
-      KEYCLOAK_HEALTHCHECK_URL: http://keycloak:9000/health/ready
+      KEYCLOAK_HEALTHCHECK_URL: http://keycloak:9000/auth/health/ready
+      KEYCLOAK_ISSUER: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth/realms/oryma
+      KEYCLOAK_JWKS_INTERNAL_URL: http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs
+      KEYCLOAK_ADMIN_CLIENT_ID: admin-api
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${ADMIN_API_OIDC_SECRET:?Configure ADMIN_API_OIDC_SECRET in .env}
       SYNAPSE_HEALTHCHECK_URL: http://synapse:8008/_matrix/client/versions
     networks: [internal]
     depends_on:
@@ -118,25 +125,20 @@ services:
       external: {}
       internal:
         aliases: [oryma.local]
-    depends_on:
-      synapse:
-        condition: service_healthy
-      keycloak:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "caddy", "version"]
+      test: ["CMD-SHELL", "test -f /data/caddy/pki/authorities/local/root.crt && caddy version"]
       interval: 30s
       timeout: 5s
       retries: 3
-    security_opt: [no-new-privileges:true]
-    cap_drop: [ALL]
-
 networks:
   external:
     name: oryma-external
   internal:
     name: oryma-internal
     internal: true
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
 
 volumes:
   postgres-data:

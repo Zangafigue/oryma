@@ -10,9 +10,12 @@ Ce document verrouille le contrat consommé par Synapse, la console et l’API d
 | Issuer exact | `https://oryma.local/auth/realms/oryma` |
 | Découverte OIDC | `https://oryma.local/auth/realms/oryma/.well-known/openid-configuration` |
 | JWKS | `https://oryma.local/auth/realms/oryma/protocol/openid-connect/certs` |
+| JWKS depuis l’API Docker | `http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs` |
 | Algorithmes acceptés | clés publiques publiées par le JWKS ; aucun secret partagé pour valider un jeton utilisateur |
 
 Synapse et l’API doivent vérifier l’issuer exact, l’expiration et la signature. L’API récupère régulièrement le JWKS et n’accepte aucun jeton non signé ou signé par une autre autorité.
+
+Synapse conserve cet issuer public et utilise les endpoints OIDC HTTPS publiés par Caddy : Synapse exige HTTPS pour le `token_endpoint`. L’API d’administration utilise séparément son JWKS interne (`http://keycloak:8080/...`) pour éviter de dépendre du proxy pour la validation de ses jetons.
 
 ## Clients
 
@@ -21,6 +24,17 @@ Synapse et l’API doivent vérifier l’issuer exact, l’expiration et la sign
 | `synapse` | confidentiel | authorization code | callback `https://oryma.local/_synapse/client/oidc/callback` ; secret `OIDC_SYNAPSE_SECRET` |
 | `console` | public | authorization code + PKCE S256 | `https://oryma.local/admin/*` ; aucun secret navigateur |
 | `admin-api` | confidentiel | client credentials seulement | appels sortants de l’API vers Keycloak ; aucun flux navigateur |
+
+Paramètres injectés dans le conteneur `admin-api` :
+
+| Variable | Valeur / rôle |
+|---|---|
+| `KEYCLOAK_ISSUER` | issuer public : `https://${ORYMA_HOST}/auth/realms/oryma` ; valeur stricte du claim `iss` |
+| `KEYCLOAK_JWKS_INTERNAL_URL` | JWKS sur le réseau Compose : `http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs` |
+| `KEYCLOAK_ADMIN_CLIENT_ID` | `admin-api` |
+| `KEYCLOAK_ADMIN_CLIENT_SECRET` | secret local `ADMIN_API_OIDC_SECRET`, jamais committé |
+
+Le client `console` est public : Authorization Code avec PKCE S256 seulement ; les flux implicite, password/direct grant et client credentials sont désactivés. Un access token obtenu par ce client porte naturellement `azp: "console"` ; le mapper ajoute `admin-api` à `aud`.
 
 ## Jeton de la console reçu par l’API
 
