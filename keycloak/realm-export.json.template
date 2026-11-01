@@ -1,0 +1,75 @@
+{
+  "realm": "oryma",
+  "enabled": true,
+  "displayName": "Oryma",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "defaultRoles": ["agent"],
+  "roles": {
+    "realm": [
+      {"name": "agent", "description": "Agent enrôlé Oryma"},
+      {"name": "admin", "description": "Administrateur Oryma"}
+    ]
+  },
+  "requiredActions": [
+    {"alias": "CONFIGURE_TOTP", "name": "Configurer OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": true, "priority": 10}
+  ],
+  "requiredCredentials": ["password", "otp"],
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "clients": [
+    {
+      "clientId": "synapse",
+      "name": "Synapse Oryma",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "__OIDC_SYNAPSE_SECRET__",
+      "redirectUris": ["https://__ORYMA_HOST__/_synapse/client/oidc/callback"],
+      "webOrigins": ["https://__ORYMA_HOST__"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "console",
+      "name": "Console d’administration Oryma",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "redirectUris": ["https://__ORYMA_HOST__/admin/*"],
+      "webOrigins": ["https://__ORYMA_HOST__"],
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "attributes": {"pkce.code.challenge.method": "S256"},
+      "protocolMappers": [
+        {
+          "name": "admin-api audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {"included.client.audience": "admin-api", "access.token.claim": "true", "id.token.claim": "false"}
+        }
+      ]
+    },
+    {
+      "clientId": "admin-api",
+      "name": "Service d’administration Oryma",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "__ADMIN_API_OIDC_SECRET__",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "clientAuthenticatorType": "client-secret"
+    }
+  ]
+}
