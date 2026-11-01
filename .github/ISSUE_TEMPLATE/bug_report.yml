@@ -1,0 +1,63 @@
+name: Signaler un bug
+description: Décrire un comportement reproductible qui ne respecte pas le contrat attendu.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci de ne joindre aucun secret, aucun jeton, aucune donnée réelle et aucune capture contenant un compte réel. Pour une vulnérabilité, suivez SECURITY.md au lieu de créer une issue publique.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Comportement observé
+      description: Décrivez précisément ce qui s’est passé.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportement attendu
+      description: Indiquez l’exigence, l’invariant ou le résultat attendu (FR-, SEC-, INV-).
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Étapes de reproduction
+      description: Utilisez uniquement les comptes de démonstration fictifs.
+      placeholder: |
+        1. Démarrer…
+        2. Se connecter avec le compte de démonstration…
+        3. Observer…
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version ou commit
+      description: Branche, tag ou SHA court concerné.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environnement
+      description: Système, navigateur ou téléphone, versions des images Docker et configuration non sensible utiles.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Journaux ou captures nettoyés
+      description: Retirez tout secret, jeton ou identifiant réel.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Vérifications
+      options:
+        - label: J’ai vérifié qu’aucune donnée réelle ou secrète n’est incluse.
+          required: true
+        - label: Ce signalement n’est pas une vulnérabilité de sécurité non corrigée.
+          required: true

@@ -1,0 +1,62 @@
+name: Proposer une évolution
+description: Décrire un besoin utilisateur et le résultat attendu avant de proposer une solution.
+title: "[Évolution] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problème à résoudre
+      description: Qui rencontre ce problème, dans quel contexte et avec quel impact ?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Résultat attendu
+      description: Décrivez le résultat mesurable, pas uniquement une interface ou une technologie.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Domaine principal
+      options:
+        - Accès et identité
+        - Messagerie et chiffrement
+        - Enrôlement et révocation
+        - Classification et expiration
+        - Console d’administration
+        - Interface agent et compatibilité mobile
+        - Audit
+        - Infrastructure et déploiement
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Solution envisagée
+      description: Facultatif. Indiquez aussi les alternatives déjà considérées.
+  - type: textarea
+    id: scope
+    attributes:
+      label: Périmètre et exclusions
+      description: Précisez ce que cette évolution ne doit pas inclure.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Impacts et risques
+      description: Sécurité, métadonnées visibles du serveur, invariants, API, déploiement, accessibilité ou migration.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Alignement
+      options:
+        - label: J’ai vérifié le périmètre du prototype et les documents existants.
+          required: true
+        - label: La proposition n’introduit aucune cryptographie écrite par l’équipe ni service tiers indispensable.
+          required: true

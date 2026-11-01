@@ -1,0 +1,39 @@
+name: Améliorer la documentation
+description: Signaler une information absente, incohérente, ambiguë ou obsolète.
+title: "[Docs] "
+labels:
+  - documentation
+body:
+  - type: input
+    id: document
+    attributes:
+      label: Document ou section
+      description: Chemin et titre de la section concernée.
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Problème
+      description: Expliquez ce qui manque, se contredit ou peut induire l’équipe en erreur.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: Correction proposée
+      description: Fournissez le texte ou le résultat attendu si possible.
+  - type: textarea
+    id: traceability
+    attributes:
+      label: Documents liés
+      description: Listez les exigences, invariants, ADRs ou contrats qui doivent rester cohérents.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Vérification
+      options:
+        - label: J’ai recherché une issue existante sur ce sujet.
+          required: true
+        - label: Aucun contenu sensible n’est inclus.
+          required: true

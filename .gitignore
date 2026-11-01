@@ -1,0 +1,47 @@
+# Secrets et environnement local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+secrets/
+root.key
+intermediate.key
+
+# Données générées par les services (volumes Docker, certificats internes, médias)
+caddy-data/
+caddy-config/
+postgres-data/
+synapse-data/
+keycloak-data/
+media_store/
+*.signing.key
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+
+# Éditeurs et système
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Journaux et temporaires
+*.log
+tmp/
+temp/
+*.tmp
