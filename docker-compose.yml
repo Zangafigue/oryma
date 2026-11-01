@@ -24,6 +24,7 @@ services:
     restart: unless-stopped
     environment:
       ORYMA_HOST: ${ORYMA_HOST:?Configure ORYMA_HOST in .env before the first start}
+      SYNAPSE_SERVER_NAME: ${ORYMA_HOST:?Configure ORYMA_HOST in .env before the first start}
       SYNAPSE_DB_PASSWORD: ${SYNAPSE_DB_PASSWORD:?Configure SYNAPSE_DB_PASSWORD in .env}
       SYNAPSE_REGISTRATION_SECRET: ${SYNAPSE_REGISTRATION_SECRET:?Configure SYNAPSE_REGISTRATION_SECRET in .env}
       SYNAPSE_MACAROON_SECRET: ${SYNAPSE_MACAROON_SECRET:?Configure SYNAPSE_MACAROON_SECRET in .env}
