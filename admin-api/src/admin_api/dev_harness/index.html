@@ -20,11 +20,12 @@
     </style>
   </head>
   <body>
-    <h1>Test local OIDC et enrôlement</h1>
+    <h1>Test local OIDC, enrôlement et révocation</h1>
     <p class="warning">
       Harnais temporaire de développement, pas une console de production. Il utilise Authorization
-      Code + PKCE S256 ; aucun secret client n’est utilisé. Le jeton reste en mémoire dans cet
-      onglet. La réponse d’enrôlement peut contenir un mot de passe temporaire : ne le partagez pas.
+      Code + PKCE S256 ; aucun secret client n’est utilisé. Le jeton d’accès reste seulement en
+      mémoire dans cet onglet et n’est jamais affiché ni stocké. La réponse d’enrôlement peut
+      contenir un mot de passe temporaire : ne le partagez pas.
     </p>
 
     <p id="status" role="status" aria-live="polite"></p>
@@ -67,6 +68,26 @@
       <h2>Réponse API</h2>
       <p>Si la réponse contient un mot de passe temporaire, transmettez-le par un canal convenu.</p>
       <pre id="result-output"></pre>
+    </section>
+
+    <form id="revoke-form" hidden>
+      <h2>Tester POST /api/v1/agents/{id}/revoke</h2>
+      <label>UUID de l’agent
+        <input
+          name="agent_id"
+          required
+          pattern="[0-9a-fA-F-]{36}"
+          autocomplete="off"
+          value="2226d460-b86d-4ff0-bec7-11977032d3b6"
+        >
+      </label>
+      <button type="submit">Révoquer l’agent</button>
+    </form>
+
+    <section id="revoke-result" hidden>
+      <h2>Étapes de révocation</h2>
+      <ol id="revoke-steps"></ol>
+      <pre id="revoke-output"></pre>
     </section>
 
     <script type="module" src="./app.js"></script>
