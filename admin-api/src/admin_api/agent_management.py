@@ -1,15 +1,25 @@
 import base64
 import binascii
-from dataclasses import dataclass
+import json
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Annotated, Literal, Protocol
 from uuid import UUID
 
 import asyncpg
 from fastapi import APIRouter, Depends, Query, Request
+from pydantic import BaseModel, ConfigDict
 
 from admin_api.auth import Principal, require_admin
 from admin_api.config import Settings
+from admin_api.enrollment import (
+    AgentRole as EnrollmentRole,
+)
+from admin_api.enrollment import (
+    IdentityCompensationFailed,
+    IdentityProviderUnavailable,
+    KeycloakAdminClient,
+)
 from admin_api.errors import ApiError
 
 AgentStatus = Literal["actif", "revoque"]
@@ -58,6 +68,23 @@ class AgentManagementUnavailable(Exception):
     pass
 
 
+class AgentRoleChangeCompensationFailed(Exception):
+    pass
+
+
+class AgentRoleChangeUnavailable(Exception):
+    pass
+
+
+class RealmRoleManager(Protocol):
+    async def change_role(
+        self,
+        keycloak_id: UUID,
+        current_role: EnrollmentRole,
+        new_role: EnrollmentRole,
+    ) -> None: ...
+
+
 class AgentManagementStore(Protocol):
     async def list_agents(
         self,
@@ -69,6 +96,14 @@ class AgentManagementStore(Protocol):
     ) -> list[AgentRecord]: ...
 
     async def get_agent(self, caller_id: UUID, agent_id: UUID) -> AgentRecord: ...
+
+    async def change_agent_role(
+        self,
+        caller_id: UUID,
+        agent_id: UUID,
+        new_role: AgentRole,
+        role_manager: RealmRoleManager,
+    ) -> AgentRecord: ...
 
 
 class PostgresAgentManagementStore:
@@ -135,6 +170,80 @@ class PostgresAgentManagementStore:
         finally:
             await connection.close()
 
+    async def change_agent_role(
+        self,
+        caller_id: UUID,
+        agent_id: UUID,
+        new_role: AgentRole,
+        role_manager: RealmRoleManager,
+    ) -> AgentRecord:
+        connection = await self._connect()
+        identity_change: tuple[UUID, AgentRole, AgentRole] | None = None
+        try:
+            async with connection.transaction():
+                actor_id = await self._active_admin_id(connection, caller_id)
+                row = await connection.fetchrow(
+                    """
+                    SELECT a.id, a.keycloak_id, a.matrix_id, a.nom_complet,
+                           m.code AS ministere_code, a.fonction, a.role,
+                           a.statut, a.cree_le, a.revoque_le
+                    FROM agents AS a
+                    LEFT JOIN ministeres AS m ON m.id = a.ministere_id
+                    WHERE a.id = $1
+                    FOR UPDATE OF a
+                    """,
+                    agent_id,
+                )
+                if row is None:
+                    raise AgentNotFound
+                agent = self._record_from_row(row)
+                if agent.role == new_role:
+                    return agent
+
+                keycloak_id = row["keycloak_id"]
+                current_role: AgentRole = agent.role
+                try:
+                    await role_manager.change_role(keycloak_id, current_role, new_role)
+                except IdentityCompensationFailed as error:
+                    raise AgentRoleChangeCompensationFailed from error
+                except IdentityProviderUnavailable as error:
+                    raise AgentRoleChangeUnavailable from error
+                identity_change = (keycloak_id, current_role, new_role)
+
+                await connection.execute(
+                    "UPDATE agents SET role = $1 WHERE id = $2",
+                    new_role,
+                    agent_id,
+                )
+                await connection.execute(
+                    """
+                    INSERT INTO audit_log (acteur_id, action, cible_id, details)
+                    VALUES ($1, 'CHANGEMENT_ROLE', $2, $3::jsonb)
+                    """,
+                    actor_id,
+                    agent_id,
+                    json.dumps({"ancien_role": current_role, "nouveau_role": new_role}),
+                )
+            identity_change = None
+            return replace(agent, role=new_role)
+        except (AgentManagementCallerNotAdmin, AgentNotFound):
+            raise
+        except (
+            AgentRoleChangeUnavailable,
+            AgentRoleChangeCompensationFailed,
+        ):
+            raise
+        except (asyncpg.PostgresError, OSError, TimeoutError, ValueError, TypeError) as error:
+            if identity_change is not None:
+                try:
+                    keycloak_id, current_role, new_role = identity_change
+                    await role_manager.change_role(keycloak_id, new_role, current_role)
+                except Exception as compensation_error:
+                    raise AgentRoleChangeCompensationFailed from compensation_error
+            raise AgentManagementUnavailable from error
+        finally:
+            await connection.close()
+
     async def _connect(self) -> asyncpg.Connection:
         if not self._database_url:
             raise AgentManagementUnavailable("Database is not configured")
@@ -149,17 +258,23 @@ class PostgresAgentManagementStore:
 
     @staticmethod
     async def _require_active_admin(connection: asyncpg.Connection, caller_id: UUID) -> None:
-        is_admin = await connection.fetchval(
+        await PostgresAgentManagementStore._active_admin_id(connection, caller_id)
+
+    @staticmethod
+    async def _active_admin_id(
+        connection: asyncpg.Connection,
+        caller_id: UUID,
+    ) -> UUID:
+        admin_id = await connection.fetchval(
             """
-            SELECT EXISTS (
-                SELECT 1 FROM agents
-                WHERE keycloak_id = $1 AND role = 'admin' AND statut = 'actif'
-            )
+            SELECT id FROM agents
+            WHERE keycloak_id = $1 AND role = 'admin' AND statut = 'actif'
             """,
             caller_id,
         )
-        if not is_admin:
+        if admin_id is None:
             raise AgentManagementCallerNotAdmin
+        return admin_id
 
     @staticmethod
     def _record_from_row(row: asyncpg.Record) -> AgentRecord:
@@ -186,8 +301,10 @@ class AgentManagementService:
         self,
         settings: Settings,
         store: AgentManagementStore | None = None,
+        role_manager: RealmRoleManager | None = None,
     ) -> None:
         self._store = store or PostgresAgentManagementStore(settings.database_url)
+        self._role_manager = role_manager or KeycloakAdminClient(settings)
 
     async def list_agents(
         self,
@@ -232,6 +349,42 @@ class AgentManagementService:
                 message="L’agent demandé est introuvable.",
             ) from error
         except AgentManagementUnavailable as error:
+            raise self._unavailable_error() from error
+        return record.as_response()
+
+    async def change_role(
+        self,
+        principal: Principal,
+        agent_id: UUID,
+        new_role: AgentRole,
+    ) -> dict[str, object]:
+        caller_id = self._caller_id(principal)
+        try:
+            record = await self._store.change_agent_role(
+                caller_id,
+                agent_id,
+                new_role,
+                self._role_manager,
+            )
+        except AgentManagementCallerNotAdmin as error:
+            raise self._forbidden_error() from error
+        except AgentNotFound as error:
+            raise ApiError(
+                status_code=404,
+                code="ERR-031",
+                message="L’agent demandé est introuvable.",
+            ) from error
+        except AgentRoleChangeCompensationFailed as error:
+            raise ApiError(
+                status_code=503,
+                code="ERR-500",
+                message="Le changement de rôle a échoué et son annulation n’a pas abouti.",
+                details={"compensation": "echec"},
+            ) from error
+        except (
+            AgentRoleChangeUnavailable,
+            AgentManagementUnavailable,
+        ) as error:
             raise self._unavailable_error() from error
         return record.as_response()
 
@@ -292,6 +445,12 @@ def _service_from_request(request: Request) -> AgentManagementService:
     return request.app.state.agent_management_service
 
 
+class RoleChangeInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    role: AgentRole
+
+
 @router.get("/agents")
 async def list_agents(
     request: Request,
@@ -314,4 +473,16 @@ async def get_agent(
     service: Annotated[AgentManagementService, Depends(_service_from_request)],
 ) -> dict[str, object]:
     data = await service.get_agent(principal, agent_id)
+    return {"data": data, "request_id": request.state.request_id}
+
+
+@router.patch("/agents/{agent_id}/role")
+async def change_agent_role(
+    agent_id: UUID,
+    payload: RoleChangeInput,
+    request: Request,
+    principal: Annotated[Principal, Depends(require_admin)],
+    service: Annotated[AgentManagementService, Depends(_service_from_request)],
+) -> dict[str, object]:
+    data = await service.change_role(principal, agent_id, payload.role)
     return {"data": data, "request_id": request.state.request_id}

@@ -83,7 +83,7 @@ Rôle : `admin` actif. Retourne un `Agent`. Erreur `ERR-031` si l’agent est in
 
 ### PATCH `/agents/{agent_id}/role`
 
-Rôle : `admin`. Corps `{ "role": "admin" }`. Audit `CHANGEMENT_ROLE`.
+Rôle : `admin` actif. Corps strict : `{ "role": "admin" }` (valeurs permises : `admin`, `agent`). Le service remplace le rôle realm Keycloak puis met à jour `agents` et écrit l’audit `CHANGEMENT_ROLE` dans une transaction. Si l’écriture en base échoue après la mise à jour Keycloak, le rôle Keycloak est compensé ; un échec de compensation est signalé en `ERR-500`. Une demande conservant le rôle courant est idempotente et ne crée pas d’entrée d’audit. Erreurs : `ERR-013`, `ERR-014`, `ERR-023`, `ERR-031`, `ERR-500`.
 
 ### POST `/agents/{agent_id}/revoke`
 
