@@ -85,7 +85,7 @@ La commande refuse par défaut les environnements autres que `development`. Elle
 
 ## Vérification OIDC locale (harnais temporaire)
 
-Le harnais n’est pas la console produit. Il est servi uniquement si `ORYMA_ENVIRONMENT=development` et `ORYMA_ENABLE_LOCAL_OIDC_HARNESS=true` sont définis dans le `.env` local ignoré par Git. Il réalise Authorization Code + PKCE S256 pour le client public `console`, affiche les claims utiles sans conserver l’access token après fermeture/rechargement de l’onglet, puis permet de tester l’appel authentifié à `POST /api/v1/agents`.
+L’aperçu de la console n’est pas destiné à la production. Il est servi uniquement si `ORYMA_ENVIRONMENT=development` et `ORYMA_ENABLE_LOCAL_OIDC_HARNESS=true` sont définis dans le `.env` local ignoré par Git. Il réalise Authorization Code + PKCE S256 pour le client public `console` ; le jeton d’accès reste en mémoire uniquement, sans être affiché ni conservé après fermeture/rechargement de l’onglet.
 
 ```bash
 # Dans .env local uniquement :
@@ -95,7 +95,7 @@ ORYMA_ENABLE_LOCAL_OIDC_HARNESS=true
 docker compose up -d --build admin-api caddy
 ```
 
-Ouvrir `https://${ORYMA_HOST}/admin/`, se connecter avec le compte administrateur de démonstration, vérifier `azp=console`, `aud` contenant `admin-api` et le rôle realm `admin`. Le harnais permet de tester l’enrôlement, la révocation d’un agent fictif, le chargement des niveaux (`GET /api/v1/levels`), la création de salles (`POST /api/v1/rooms`) avec une liste d’UUID de membres et la consultation des salles enregistrées (`GET /api/v1/rooms`). Le jeton d’accès reste uniquement en mémoire dans l’onglet et n’est jamais affiché ni stocké. L’API reste l’autorité de validation du jeton. La réponse d’enrôlement peut inclure le mot de passe temporaire du nouvel agent : le transmettre uniquement par le canal convenu et ne pas le copier dans les journaux ou un ticket. Après les tests, remettre `ORYMA_ENABLE_LOCAL_OIDC_HARNESS=false` et `ORYMA_ENVIRONMENT=production`, puis redéployer `admin-api` et `caddy`. Ne jamais activer ce harnais sur une instance partagée ou de production.
+Ouvrir `https://${ORYMA_HOST}/admin/` et se connecter avec un compte de démonstration. La console de développement expose les parcours A1–A5 : liste/filtre des agents, enrôlement, révocation avec confirmation et progression, journal d’audit en lecture seule, création et consultation de salles classifiées. Les salles acceptent une liste d’UUID d’agents actifs. Le jeton d’accès reste uniquement en mémoire et l’API demeure l’autorité de validation et d’autorisation. La réponse d’enrôlement peut inclure le mot de passe temporaire du nouvel agent : le transmettre uniquement par le canal convenu et ne pas le copier dans les journaux ou un ticket. Après les tests, remettre `ORYMA_ENABLE_LOCAL_OIDC_HARNESS=false` et `ORYMA_ENVIRONMENT=production`, puis redéployer `admin-api` et `caddy`. Ne jamais activer cet aperçu sur une instance partagée ou de production.
 
 ## Réseaux, volumes et secrets
 

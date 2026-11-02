@@ -137,7 +137,9 @@ Rôle : `agent` ou `admin` actif. Retourne sous `data.items` les salles classifi
 
 ### GET `/audit`
 
-Rôle : `admin`. Filtres : `action`, `acteur_id`, `depuis`, `jusqu_a`. Lecture seule. Pas d’adresse IP ni de contenu de message.
+Rôle : `admin` actif. Filtres optionnels : `action`, `acteur_id`, `depuis`, `jusqu_a`. Dates ISO 8601 avec fuseau ; la date de début doit précéder la date de fin. Pagination par curseur opaque (`page_size` de 1 à 100, 50 par défaut), les événements les plus récents d’abord.
+
+Réponse sous `data.items` : `id`, `action`, `acteur_id`, `cible_id`, `details`, `horodatage`. `next_cursor` est nul à la dernière page. Lecture seule ; les détails exposés restent les métadonnées d’audit enregistrées, sans adresse IP ni contenu de message.
 
 Un `403` pour rôle insuffisant écrit `TENTATIVE_ACCES_REFUSE`, avec la route et le motif uniquement. Ni l’adresse IP, ni le jeton, ni un identifiant de session ne sont journalisés.
 

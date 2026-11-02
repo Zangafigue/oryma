@@ -4,124 +4,262 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
-    <title>Oryma — test OIDC local</title>
+    <title>Oryma — console d’administration</title>
     <style>
-      :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; }
-      body { margin: 0 auto; max-width: 760px; padding: 2rem 1rem; color: #17212b; }
+      :root {
+        color-scheme: light;
+        font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+        --primary: #1f3a5f;
+        --accent: #c9a227;
+        --success: #2e7d32;
+        --danger: #c62828;
+        --background: #f6f8fb;
+        --text: #1b2430;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: var(--text); background: var(--background); }
+      header, main { width: min(1120px, 100%); margin: 0 auto; padding: 1rem; }
+      header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
       h1, h2 { line-height: 1.2; }
-      .warning { padding: 1rem; border-left: 4px solid #b54708; background: #fff4e5; }
-      .actions, .row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
-      label { display: block; margin: .8rem 0; font-weight: 600; }
-      input, select { box-sizing: border-box; display: block; width: 100%; padding: .6rem; }
-      button { padding: .65rem 1rem; cursor: pointer; }
+      h1 { margin: .25rem 0; color: var(--primary); }
+      h2 { margin-top: 0; }
+      .warning, .notice { padding: 1rem; border-left: 4px solid var(--accent); background: #fff9e8; }
+      .panel { padding: 1rem; margin: 1rem 0; background: white; border: 1px solid #d5dce5; border-radius: .5rem; }
+      .toolbar, nav, .row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+      nav { border-bottom: 2px solid var(--accent); padding: .5rem 0; }
+      label { display: block; margin: .75rem 0; font-weight: 600; }
+      input, select, textarea { display: block; width: 100%; margin-top: .25rem; padding: .65rem; border: 1px solid #8995a3; border-radius: .25rem; font: inherit; }
+      button { min-height: 44px; padding: .6rem 1rem; color: white; background: var(--primary); border: 0; border-radius: .25rem; font: inherit; cursor: pointer; }
+      button.secondary { color: var(--primary); background: white; border: 1px solid var(--primary); }
+      button.danger { background: var(--danger); }
+      button:disabled { opacity: .6; cursor: wait; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .75rem; }
+      .dashboard-card { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; }
+      .dashboard-card h3 { margin: 0; color: var(--primary); }
+      .dashboard-card p { margin: 0 0 .5rem; }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: .7rem; border-bottom: 1px solid #d5dce5; text-align: left; vertical-align: top; }
+      th { color: var(--primary); white-space: nowrap; }
       pre { overflow: auto; padding: 1rem; background: #f2f4f7; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .status { min-height: 1.5em; font-weight: 600; }
+      .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .9rem; }
+      .active { color: #155724; background: #d9f0df; }
+      .revoked { color: #8c1d18; background: #fbe0de; }
+      .level-confidential { color: #721c24; background: #f8d7da; }
+      .level-restricted { color: #123b62; background: #dcecff; }
       [hidden] { display: none !important; }
-      #status { min-height: 1.5em; }
+      @media (max-width: 600px) {
+        header { align-items: flex-start; flex-direction: column; }
+        .panel { padding: .75rem; }
+      }
     </style>
   </head>
   <body>
-    <h1>Test local OIDC, agents, révocation et salles</h1>
-    <p class="warning">
-      Harnais temporaire de développement, pas une console de production. Il utilise Authorization
-      Code + PKCE S256 ; aucun secret client n’est utilisé. Le jeton d’accès reste seulement en
-      mémoire dans cet onglet et n’est jamais affiché ni stocké. La réponse d’enrôlement peut
-      contenir un mot de passe temporaire : ne le partagez pas.
-    </p>
+    <header>
+      <div>
+        <h1>Oryma</h1>
+        <div>Console d’administration</div>
+      </div>
+      <div class="toolbar">
+        <span id="identity"></span>
+        <button id="login" type="button">Se connecter avec Keycloak</button>
+        <button id="logout" class="secondary" type="button" disabled>Effacer la session locale</button>
+      </div>
+    </header>
+    <main>
+      <p class="warning">
+        Interface de développement. Le jeton d’accès reste en mémoire dans cet onglet : il n’est
+        jamais affiché ni enregistré. Les autorisations sont toujours vérifiées par l’API.
+      </p>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
 
-    <p id="status" role="status" aria-live="polite"></p>
-    <div class="actions">
-      <button id="login" type="button">Connexion Keycloak (PKCE)</button>
-      <button id="clear" type="button" disabled>Effacer le jeton local</button>
-    </div>
+      <nav id="navigation" hidden aria-label="Navigation de la console">
+        <button class="secondary" data-view="dashboard" type="button" hidden>Accueil admin</button>
+        <button class="secondary" data-view="agents" type="button">Agents</button>
+        <button class="secondary" data-view="audit" type="button">Journal d’audit</button>
+        <button class="secondary" data-view="rooms" type="button">Salles classifiées</button>
+      </nav>
 
-    <section id="claims" hidden>
-      <h2>Claims reçus (lecture indicative)</h2>
-      <p>Le serveur API effectue les vérifications faisant autorité.</p>
-      <pre id="claims-output"></pre>
-    </section>
-
-    <form id="enrollment" hidden>
-      <h2>Tester POST /api/v1/agents</h2>
-      <label>Identifiant Keycloak
-        <input name="identifiant" required minlength="3" maxlength="64" pattern="[A-Za-z0-9._-]+"
-               autocomplete="off">
-      </label>
-      <label>Nom complet
-        <input name="nom_complet" required maxlength="200" autocomplete="off">
-      </label>
-      <label>Code du ministère
-        <input name="ministere_code" required maxlength="64" value="DEV-DEMO" autocomplete="off">
-      </label>
-      <label>Fonction (facultatif)
-        <input name="fonction" maxlength="200" autocomplete="off">
-      </label>
-      <label>Rôle
-        <select name="role">
-          <option value="agent">agent</option>
-          <option value="admin">admin</option>
-        </select>
-      </label>
-      <button type="submit">Enrôler l’agent</button>
-    </form>
-
-    <section id="result" hidden>
-      <h2>Réponse API</h2>
-      <p>Si la réponse contient un mot de passe temporaire, transmettez-le par un canal convenu.</p>
-      <pre id="result-output"></pre>
-    </section>
-
-    <form id="revoke-form" hidden>
-      <h2>Tester POST /api/v1/agents/{id}/revoke</h2>
-      <label>UUID de l’agent
-        <input
-          name="agent_id"
-          required
-          pattern="[0-9a-fA-F-]{36}"
-          autocomplete="off"
-          value="2226d460-b86d-4ff0-bec7-11977032d3b6"
-        >
-      </label>
-      <button type="submit">Révoquer l’agent</button>
-    </form>
-
-    <section id="revoke-result" hidden>
-      <h2>Étapes de révocation</h2>
-      <ol id="revoke-steps"></ol>
-      <pre id="revoke-output"></pre>
-    </section>
-
-    <section id="rooms-tools" hidden>
-      <h2>Niveaux de classification</h2>
-      <button id="load-levels" type="button">Charger GET /api/v1/levels</button>
-      <pre id="levels-output"></pre>
-
-      <form id="room-form">
-        <h2>Créer une salle — POST /api/v1/rooms</h2>
-        <label>Nom
-          <input name="nom" required maxlength="200" autocomplete="off">
-        </label>
-        <label>Niveau
-          <select name="niveau" required>
-            <option value="">Chargez les niveaux…</option>
-          </select>
-        </label>
-        <label>UUID des membres (un par ligne ou séparés par des virgules)
-          <textarea name="membres" rows="4" autocomplete="off"></textarea>
-        </label>
-        <button type="submit">Créer la salle</button>
-      </form>
-
-      <section id="room-result" hidden>
-        <h2>Résultat de création</h2>
-        <p id="room-summary"></p>
-        <pre id="room-output"></pre>
+      <section id="view-dashboard" hidden>
+        <section class="panel">
+          <h2 id="dashboard-greeting">Tableau de bord administrateur</h2>
+          <p>Accédez rapidement aux opérations de gestion et consultez les dernières activités de la console.</p>
+        </section>
+        <section class="grid" aria-label="Actions administrateur">
+          <article class="panel dashboard-card">
+            <h3>Gestion des agents</h3>
+            <p>Consulter les comptes, enrôler un agent ou gérer une révocation.</p>
+            <button type="button" data-dashboard-action="agents">Ouvrir les agents</button>
+            <button class="secondary" type="button" data-dashboard-action="enroll">Enrôler un agent</button>
+          </article>
+          <article class="panel dashboard-card">
+            <h3>Journal d’audit</h3>
+            <p>Examiner les événements de gestion enregistrés par la plateforme.</p>
+            <button type="button" data-dashboard-action="audit">Consulter l’audit</button>
+          </article>
+          <article class="panel dashboard-card">
+            <h3>Salles classifiées</h3>
+            <p>Créer une salle et vérifier les salles accessibles à votre compte.</p>
+            <button type="button" data-dashboard-action="rooms">Gérer les salles</button>
+          </article>
+        </section>
+        <section class="panel">
+          <h2>Activité récente</h2>
+          <p id="dashboard-activity-state" class="status" role="status" aria-live="polite">Chargement…</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Date</th><th>Action</th><th>Acteur</th><th>Cible</th></tr></thead>
+              <tbody id="dashboard-audit-table"></tbody>
+            </table>
+          </div>
+          <button class="secondary" type="button" data-dashboard-action="audit">Voir tout le journal</button>
+        </section>
       </section>
 
-      <h2>Salles enregistrées</h2>
-      <button id="load-rooms" type="button">Charger GET /api/v1/rooms</button>
-      <pre id="rooms-output"></pre>
-    </section>
+      <section id="view-agents" hidden>
+        <section class="panel">
+          <div class="row">
+            <h2>Agents</h2>
+            <button id="refresh-agents" type="button">Actualiser</button>
+          </div>
+          <div class="grid">
+            <label>Statut
+              <select id="agent-status">
+                <option value="">Tous</option>
+                <option value="actif">Actif</option>
+                <option value="revoque">Révoqué</option>
+              </select>
+            </label>
+            <label>Code du ministère
+              <input id="agent-ministry" maxlength="64">
+            </label>
+          </div>
+          <button id="filter-agents" class="secondary" type="button">Filtrer</button>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Nom</th><th>Ministère</th><th>Fonction</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="agents-table"></tbody>
+            </table>
+          </div>
+          <button id="next-agents" class="secondary" type="button" hidden>Page suivante</button>
+        </section>
 
+        <section class="panel">
+          <h2>Enrôler un agent</h2>
+          <form id="enrollment-form">
+            <div class="grid">
+              <label>Identifiant professionnel
+                <input name="identifiant" required minlength="3" maxlength="64" pattern="[A-Za-z0-9._-]+" autocomplete="off">
+              </label>
+              <label>Nom complet
+                <input name="nom_complet" required maxlength="200" autocomplete="off">
+              </label>
+              <label>Ministère
+                <input name="ministere_code" required maxlength="64" value="DEV-DEMO" autocomplete="off">
+              </label>
+              <label>Fonction
+                <input name="fonction" maxlength="200" autocomplete="off">
+              </label>
+              <label>Rôle
+                <select name="role"><option value="agent">Agent</option><option value="admin">Administrateur</option></select>
+              </label>
+            </div>
+            <button type="submit">Enrôler</button>
+          </form>
+          <section id="enrollment-result" hidden>
+            <h3>Compte créé</h3>
+            <p class="notice">Le mot de passe temporaire est visible une seule fois. Transmettez-le par un canal convenu.</p>
+            <pre id="enrollment-output"></pre>
+          </section>
+        </section>
+
+        <section id="revoke-panel" class="panel" hidden>
+          <h2>Confirmer la révocation</h2>
+          <p id="revoke-warning"></p>
+          <p>L’agent perdra l’accès à tous ses appareils. Il conservera l’historique déjà reçu.</p>
+          <form id="revoke-form">
+            <label>Saisissez le nom complet de l’agent pour confirmer
+              <input name="confirmation" required autocomplete="off">
+            </label>
+            <button class="danger" type="submit">Confirmer la révocation</button>
+            <button id="cancel-revoke" class="secondary" type="button">Annuler</button>
+          </form>
+          <ol id="revoke-steps"></ol>
+          <pre id="revoke-output"></pre>
+          <button id="retry-revocation" class="danger" type="button" hidden>Réessayer les étapes restantes</button>
+        </section>
+      </section>
+
+      <section id="view-audit" class="panel" hidden>
+        <h2>Journal d’audit</h2>
+        <form id="audit-filter" class="grid">
+          <label>Action
+            <input name="action" maxlength="64" placeholder="REVOCATION">
+          </label>
+          <label>UUID de l’acteur
+            <input name="acteur_id" autocomplete="off">
+          </label>
+          <label>Depuis
+            <input name="depuis" type="datetime-local">
+          </label>
+          <label>Jusqu’à
+            <input name="jusqu_a" type="datetime-local">
+          </label>
+          <button type="submit">Appliquer les filtres</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Action</th><th>Acteur</th><th>Cible</th><th>Détails</th></tr></thead>
+            <tbody id="audit-table"></tbody>
+          </table>
+        </div>
+        <button id="next-audit" class="secondary" type="button" hidden>Page suivante</button>
+      </section>
+
+      <section id="view-rooms" hidden>
+        <section class="panel">
+          <h2>Créer une salle classifiée</h2>
+          <p>Les messages sont chiffrés de bout en bout et la durée de conservation dépend du niveau.</p>
+          <button id="load-levels" class="secondary" type="button">Actualiser les niveaux</button>
+          <form id="room-form">
+            <div class="grid">
+              <label>Nom de la salle
+                <input name="nom" required maxlength="200" autocomplete="off">
+              </label>
+              <label>Niveau
+                <select name="niveau" required><option value="">Chargez les niveaux…</option></select>
+              </label>
+            </div>
+            <label>UUID des membres actifs (séparés par des virgules ou retours à la ligne)
+              <textarea name="membres" rows="3" autocomplete="off"></textarea>
+            </label>
+            <p id="room-policy" class="notice"></p>
+            <button type="submit">Créer la salle</button>
+          </form>
+          <section id="room-result" hidden>
+            <h3>Résultat</h3>
+            <p id="room-summary"></p>
+            <pre id="room-error"></pre>
+          </section>
+        </section>
+        <section class="panel">
+          <div class="row">
+            <h2>Mes salles</h2>
+            <button id="refresh-rooms" class="secondary" type="button">Actualiser</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nom</th><th>Niveau</th><th>Rétention</th><th>Créée le</th><th>Identifiant Matrix</th></tr></thead>
+              <tbody id="rooms-table"></tbody>
+            </table>
+          </div>
+          <button id="next-rooms" class="secondary" type="button" hidden>Page suivante</button>
+        </section>
+      </section>
+    </main>
     <script type="module" src="./app.js"></script>
   </body>
 </html>

@@ -41,7 +41,7 @@ Toute divergence est corrigée dans la même pull request.
 | `GET /agents`, `GET /agents/{id}` et `PATCH /agents/{id}/role` | AgentManagementService / B | Console | Implémenté | Tests de filtre, pagination, autorisation, changement de rôle et agent introuvable |
 | `POST /agents/{id}/revoke` | RevocationService / B | Console | Accepté | Test de révocation à deux appareils + test d’idempotence |
 | `GET /levels`, `POST /rooms` et `GET /rooms` | RoomService / B | Console | Implémenté | Test d’intégration de création chiffrée, invitation et purge à l’échéance |
-| `GET /audit` | AuditLedger / B | Console | Proposé | Test en ajout seul |
+| `GET /audit` | AuditLedger / B | Console | Implémenté | Tests de filtre, pagination et lecture seule |
 | `GET /health` | AdminService / B | Deployment / A | Proposé | Contrôle d’état dans Compose |
 | Royaume Keycloak (clients et rôles) | IdentityProvider / A | AdminService / B | Accepté | `realm-export.json` + test de connexion |
 | `GET /directory` | — | — | Coupé | — |

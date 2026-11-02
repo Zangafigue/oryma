@@ -115,6 +115,7 @@ Hors ligne, chargement, erreur, succès : toujours un texte explicite.
 
 | Réf. | Écran | Contenu et comportement |
 |---|---|---|
+| A0 | Tableau de bord administrateur | Accueil après connexion admin, raccourcis vers les opérations et derniers événements d’audit |
 | A1 | Liste des agents | Tableau, filtres, boutons « Enrôler » et « Révoquer » |
 | A2 | Enrôlement | Formulaire : nom complet, ministère, fonction, rôle ; mot de passe temporaire affiché une seule fois |
 | A3 | Confirmation de révocation | Confirmation, saisie du nom, résultat étape par étape |
@@ -146,7 +147,7 @@ Agent :
   Session fermée par un admin ───────────────────────────> S9 Accès révoqué
 
 Administrateur :
-  Connexion (SSO + TOTP) ──> A1 Liste des agents ──> A2 Enrôlement
+  Connexion (SSO + TOTP) ──> A0 Tableau de bord ──> A1 Liste des agents ──> A2 Enrôlement
                                   ├──> A3 Révocation
                                   ├──> A4 Journal d’audit
                                   └──> A5 Salle classifiée
