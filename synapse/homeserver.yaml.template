@@ -63,8 +63,8 @@ oidc_providers:
     client_id: "synapse"
     client_secret: "__OIDC_SYNAPSE_SECRET__"
     scopes: ["openid", "profile"]
-    # Les endpoints OIDC restent en HTTPS, exigence vérifiée par Synapse.
-    # L'API d'administration utilise séparément son JWKS interne Compose.
+    # Les endpoints OIDC restent en HTTPS : Synapse valide ce schéma et la CA
+    # locale de Caddy est installée au démarrage du conteneur.
     authorization_endpoint: "https://__ORYMA_HOST__/auth/realms/oryma/protocol/openid-connect/auth"
     token_endpoint: "https://__ORYMA_HOST__/auth/realms/oryma/protocol/openid-connect/token"
     jwks_uri: "https://__ORYMA_HOST__/auth/realms/oryma/protocol/openid-connect/certs"
