@@ -82,7 +82,7 @@ Une phrase repère, par exemple `TEST-JURY-001`, pour l’épreuve du serveur av
 | A | B | Royaume Keycloak avec clients et rôles | Connexion de la console |
 | A | B | Comptes de service Synapse et secrets | Création d’une salle de test |
 | B | A | `POST /agents` et `POST …/revoke` | Test à deux appareils |
-| B | A | Variable `DEMO_RETENTION` | Expiration en quelques minutes |
+| B | A | `DEMO_RETENTION=true` | 5 min Diffusion restreinte / 2 min Confidentiel |
 
 ## Scénarios négatifs obligatoires
 

@@ -23,6 +23,7 @@ Prouver chaque garantie de sécurité par un test automatisé ou une démonstrat
 - Enrôlement : utilisateur Keycloak créé avec TOTP imposé ; ligne d’audit.
 - Révocation : six étapes dans l’ordre ; reprise après échec partiel ; idempotence.
 - Salles : refus d’un membre non agent actif ; refus d’un niveau inconnu ; aucune salle partielle en cas d’échec.
+- Création de salle : vérifier état initial chiffré, rétention, niveaux de pouvoir, invitations et départ du compte de service.
 
 ### MessageServer et chiffrement
 
@@ -68,7 +69,7 @@ Les migrations SQL numérotées s’appliquent sur une base vide et sur une base
 
 ## Temps et expiration
 
-L’expiration par rétention dépend d’un intervalle de purge : pour les tests et la démonstration, la variable `DEMO_RETENTION` règle des durées courtes. Les noms exacts des options Synapse sont à vérifier dans la documentation de la version retenue.
+L’expiration par rétention dépend de l’intervalle de purge Synapse. Pour la démonstration, `DEMO_RETENTION=true` applique 5 minutes à Diffusion restreinte et 2 minutes à Confidentiel pour les nouvelles salles ; vérifier la purge effective sur la version Synapse retenue. La durée réellement appliquée est persistée dans `salles.duree_vie_secondes`.
 
 ## Commandes cibles
 

@@ -80,7 +80,7 @@ La classification s’applique à la **salle**, pas au message individuel : tous
 |---|---|
 | BR-001 | Un agent n’existe que s’il a été enrôlé par un administrateur. |
 | BR-002 | Un administrateur gère les accès ; il ne peut pas lire les conversations. |
-| BR-003 | Valeurs par défaut : Diffusion restreinte, 7 jours ; Confidentiel, 24 heures. Une variable d’environnement de démonstration les ramène à quelques minutes. |
+| BR-003 | Valeurs par défaut : Diffusion restreinte, 7 jours ; Confidentiel, 24 heures. `DEMO_RETENTION=true` applique respectivement 5 minutes et 2 minutes aux nouvelles salles. |
 | BR-004 | Dans le prototype, une révocation est définitive ; un retour passe par un nouvel enrôlement. |
 | BR-005 | Les données de développement et de démonstration sont exclusivement fictives. |
 | BR-006 | Le service d’administration ne poste aucun message dans une salle chiffrée. |
@@ -132,6 +132,7 @@ La classification s’applique à la **salle**, pas au message individuel : tous
 | ERR-031 | Agent introuvable | Retourner HTTP 404 |
 | ERR-032 | Révocation d’un agent déjà révoqué | Retourner HTTP 200 avec l’état existant, sans effet de bord |
 | ERR-033 | Étape de révocation en échec | Retourner HTTP 502 avec le détail des étapes, conserver les étapes réussies, permettre de réessayer sans répéter leurs effets |
+| ERR-034 | Révocation du même agent déjà en cours | Retourner HTTP 409 ; l’appelant peut réessayer après la fin de l’opération |
 | ERR-041 | Niveau de classification inconnu | Retourner HTTP 422 |
 | ERR-042 | Membre ou demandeur non agent actif | Retourner HTTP 422 sans créer de salle |
 | ERR-043 | Création de salle impossible (compte de service, Synapse) | Retourner une erreur corrélée ; ne pas enregistrer de salle partielle |

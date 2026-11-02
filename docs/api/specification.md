@@ -87,7 +87,7 @@ Rôle : `admin` actif. Corps strict : `{ "role": "admin" }` (valeurs permises : 
 
 ### POST `/agents/{agent_id}/revoke`
 
-Rôle : `admin`. Lance la séquence de révocation ([INV-06](../architecture/system-contract.md)).
+Rôle : `admin` actif. Lance la séquence de révocation ([INV-06](../architecture/system-contract.md)). Un seul traitement simultané est accepté par agent (`ERR-034`).
 
 Réponse `200` lorsque toutes les étapes réussissent :
 
@@ -115,23 +115,23 @@ En cas d’échec d’une étape : réponse `502` avec `ERR-033` et `details.eta
 
 ### GET `/levels`
 
-Rôle : `agent`. Liste des niveaux (`code`, `libelle`, `duree_vie_secondes`).
+Rôle : `agent` ou `admin` actif. Retourne les niveaux disponibles sous `data` (`code`, `libelle`, `duree_vie_secondes`).
 
 ### POST `/rooms`
 
-Rôle : `agent` ou `admin`. Corps :
+Rôle : `agent` ou `admin`. Corps strict :
 
 ```json
 { "nom": "Réunion DG", "niveau": "CONFIDENTIEL", "membres": ["<agent_id>", "<agent_id>"] }
 ```
 
-Le service refuse si l’appelant ou un membre n’est pas un agent actif (`ERR-042`), si le niveau est inconnu (`ERR-041`). Il crée la salle via le compte de service ([ADR-008](../adr/008-classified-rooms-service-account.md)) avec le chiffrement et la rétention dans l’état initial, puis enregistre `salles` et l’audit `CREATION_SALLE`. `salles.duree_vie_secondes` conserve la durée effectivement appliquée comme instantané ; `niveaux_classification` reste la source de vérité pour les nouvelles salles. Le nom retourné porte le niveau (par exemple « [Confidentiel] Réunion DG »).
+Le service refuse si l’appelant ou un membre n’est pas un agent actif (`ERR-042`), si le niveau est inconnu (`ERR-041`) ou si le corps est invalide (`ERR-023`). Il crée une salle privée via le compte de service non administrateur ([ADR-008](../adr/008-classified-rooms-service-account.md)), pose le chiffrement, la rétention et les niveaux de pouvoir dans l’état initial, invite les membres, fait quitter le compte de service, puis enregistre `salles` et l’audit `CREATION_SALLE`. Le demandeur devient administrateur de la salle. `salles.duree_vie_secondes` conserve la durée effectivement appliquée comme instantané ; `niveaux_classification` reste la source de vérité pour les nouvelles salles. Le nom retourné porte le niveau (par exemple « [Confidentiel] Réunion DG »).
 
 Réponse `201` : `{ "room_id": "…", "nom": "…", "niveau": "CONFIDENTIEL", "duree_vie_secondes": 86400 }`. En cas d’échec avant le `201` après création côté Synapse, le service tente une suppression via un accès d’administration distinct et limité. Erreur `ERR-043` si la création ou la compensation échoue ; si la suppression échoue, aucune salle n’est enregistrée comme créée et une trace technique est conservée dans `reconciliation_salles`.
 
 ### GET `/rooms`
 
-Rôle : `agent`. « Mes salles » : salles créées par l’appelant avec niveau et durée de vie.
+Rôle : `agent` ou `admin` actif. Retourne sous `data.items` les salles classifiées créées par l’appelant, avec niveau, durée de vie et date de création. Pagination par curseur opaque (`page_size` de 1 à 100, 50 par défaut), avec `next_cursor` nul à la dernière page.
 
 ## 5. Audit
 
