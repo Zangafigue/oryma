@@ -9,6 +9,8 @@ from fastapi.staticfiles import StaticFiles
 
 from admin_api.agent_management import AgentManagementService
 from admin_api.agent_management import router as agent_management_router
+from admin_api.audit import AuditService
+from admin_api.audit import router as audit_router
 from admin_api.auth import JwksClient
 from admin_api.config import Settings
 from admin_api.enrollment import EnrollmentService
@@ -64,6 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="Oryma Admin API", version="0.1.0")
     app.state.settings = settings or Settings.from_environment()
     app.state.jwks_client = JwksClient(app.state.settings.oidc_jwks_url or "")
+    app.state.audit_service = AuditService(app.state.settings)
     app.state.enrollment_service = EnrollmentService(app.state.settings)
     app.state.agent_management_service = AgentManagementService(app.state.settings)
     app.state.revocation_service = RevocationService(app.state.settings)
@@ -72,6 +75,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(RequestValidationError, render_validation_error)
     app.include_router(enrollment_router)
     app.include_router(agent_management_router)
+    app.include_router(audit_router)
     app.include_router(revocation_router)
     app.include_router(rooms_router)
     if (
