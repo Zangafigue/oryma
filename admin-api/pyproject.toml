@@ -23,6 +23,7 @@ dev = [
 
 [project.scripts]
 admin-api-migrate = "admin_api.migrations:main"
+admin-api-bootstrap-local = "admin_api.local_bootstrap:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

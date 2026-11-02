@@ -51,6 +51,26 @@ docker compose up -d
 
 Au démarrage, `admin-api` applique les migrations SQL numérotées avant de lancer FastAPI. Une migration en échec empêche le service de démarrer et reste visible dans ses journaux.
 
+## Bootstrap initial local (développement uniquement)
+
+Les migrations ne créent aucun ministère ni administrateur. Pour initialiser une base **locale de développement**, connectez d’abord l’utilisateur fictif à Keycloak et récupérez son UUID Keycloak ainsi que son identifiant Matrix. La commande exige une confirmation explicite et reçoit ses deux garde-fous uniquement pour cette exécution :
+
+```bash
+docker compose up -d --build admin-api
+docker compose exec \
+  -e ORYMA_ENVIRONMENT=development \
+  -e ORYMA_ENABLE_LOCAL_BOOTSTRAP=true \
+  admin-api admin-api-bootstrap-local \
+  --confirm-local \
+  --keycloak-id UUID_KEYCLOAK \
+  --matrix-id '@utilisateur:oryma.local' \
+  --admin-name 'Administrateur de démonstration'
+```
+
+La commande crée le ministère fictif `DEV-DEMO` et un premier admin actif lié aux identifiants fournis, dans une transaction. Elle est idempotente pour les mêmes valeurs ; elle refuse les identifiants déjà attribués, une configuration existante incompatible ou la présence d’un autre admin actif. Elle inscrit l’action dans `audit_log`. Aucun mot de passe ni jeton n’est demandé ou enregistré par cette commande.
+
+La commande refuse par défaut les environnements autres que `development`. Elle n’expose aucune route API et n’est pas un mécanisme d’initialisation de production : ne l’exécutez jamais sur une base partagée ou de production. L’UUID Keycloak peut être lu dans la fiche de l’utilisateur Keycloak ; l’identifiant Matrix doit correspondre au compte Matrix réellement provisionné.
+
 ## Réseaux, volumes et secrets
 
 - Réseau `externe` : Caddy seulement. Réseau `interne` sans accès sortant : tous les autres services.
