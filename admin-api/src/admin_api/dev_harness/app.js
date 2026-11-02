@@ -12,6 +12,10 @@ const clearButton = document.querySelector("#clear");
 const enrollmentForm = document.querySelector("#enrollment");
 const claimsSection = document.querySelector("#claims");
 const resultSection = document.querySelector("#result");
+const revokeForm = document.querySelector("#revoke-form");
+const revokeResultSection = document.querySelector("#revoke-result");
+const revokeStepsList = document.querySelector("#revoke-steps");
+const revokeOutput = document.querySelector("#revoke-output");
 
 function setStatus(message) {
   status.textContent = message;
@@ -65,6 +69,34 @@ function showTokenClaims(token) {
   } else {
     setStatus("Jeton reçu : azp, audience et rôle admin attendus sont présents.");
   }
+}
+
+function renderRevocationSteps(steps) {
+  const names = [
+    "Désactivation du compte Keycloak",
+    "Fermeture des sessions Keycloak",
+    "Suppression des appareils Synapse",
+    "Désactivation du compte Synapse",
+    "Mise à jour du statut base",
+    "Écriture de l’audit",
+  ];
+
+  revokeStepsList.innerHTML = "";
+  steps.forEach((step, index) => {
+    const item = document.createElement("li");
+    const statusText = String(step.statut || "inconnu").toLowerCase();
+    const label = step.nom || names[index] || `Étape ${index + 1}`;
+    const detail = step.detail ? ` — ${step.detail}` : "";
+    item.textContent = `${index + 1}. ${label} : ${statusText}${detail}`;
+    if (statusText === "reussie") {
+      item.style.color = "#0f766e";
+    } else if (statusText === "echec") {
+      item.style.color = "#b91c1c";
+    } else if (statusText === "ignoree") {
+      item.style.color = "#92400e";
+    }
+    revokeStepsList.appendChild(item);
+  });
 }
 
 async function beginLogin() {
@@ -150,6 +182,7 @@ async function finishLogin() {
   accessToken = payload.access_token;
   clearButton.disabled = false;
   enrollmentForm.hidden = false;
+  revokeForm.hidden = false;
   showTokenClaims(accessToken);
 }
 
@@ -160,6 +193,10 @@ clearButton.addEventListener("click", () => {
   enrollmentForm.hidden = true;
   claimsSection.hidden = true;
   resultSection.hidden = true;
+  revokeForm.hidden = true;
+  revokeResultSection.hidden = true;
+  revokeOutput.textContent = "";
+  revokeStepsList.innerHTML = "";
   clearButton.disabled = true;
   loginButton.disabled = false;
   setStatus("Jeton effacé de la mémoire de cet onglet.");
@@ -202,6 +239,65 @@ enrollmentForm.addEventListener("submit", async (event) => {
     resultSection.hidden = false;
     setStatus(`Réponse API : HTTP ${response.status}.`);
   } catch (error) {
+    setStatus(error instanceof Error ? error.message : "Appel de l’API impossible.");
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+revokeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!accessToken) {
+    setStatus("Reconnectez-vous avant de révoquer un agent.");
+    return;
+  }
+
+  const values = new FormData(revokeForm);
+  const agentId = String(values.get("agent_id") || "").trim();
+  if (!agentId) {
+    setStatus("L’UUID de l’agent est requis.");
+    return;
+  }
+
+  const submitButton = revokeForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  setStatus("Étape 1/6 : préparation de la révocation…");
+  revokeResultSection.hidden = false;
+  revokeOutput.textContent = "";
+
+  try {
+    const response = await fetch(`/api/v1/agents/${agentId}/revoke`, {
+      method: "POST",
+      credentials: "omit",
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+    const payload = await readJson(response);
+    const apiData = response.ok ? payload.data ?? payload : payload.error ?? payload;
+
+    if (Array.isArray(apiData?.etapes)) {
+      renderRevocationSteps(apiData.etapes);
+    } else {
+      revokeStepsList.innerHTML = "";
+      const item = document.createElement("li");
+      item.textContent = "Aucune étape de révocation reçue par l’API.";
+      revokeStepsList.appendChild(item);
+    }
+
+    revokeOutput.textContent = JSON.stringify(payload, null, 2);
+    setStatus(`Révocation appelée : HTTP ${response.status}.`);
+    if (!response.ok) {
+      setStatus(`Révocation en erreur : HTTP ${response.status}.`);
+    }
+  } catch (error) {
+    revokeOutput.textContent = JSON.stringify(
+      { erreur: error instanceof Error ? error.message : "Appel de l’API impossible." },
+      null,
+      2,
+    );
     setStatus(error instanceof Error ? error.message : "Appel de l’API impossible.");
   } finally {
     submitButton.disabled = false;
