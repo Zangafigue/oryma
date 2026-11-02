@@ -1,9 +1,11 @@
 import asyncio
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from admin_api.agent_management import AgentManagementService
 from admin_api.agent_management import router as agent_management_router
@@ -13,6 +15,10 @@ from admin_api.enrollment import EnrollmentService
 from admin_api.enrollment import router as enrollment_router
 from admin_api.errors import ApiError
 from admin_api.health import check_database, check_http_endpoint
+from admin_api.revocation import RevocationService
+from admin_api.revocation import router as revocation_router
+from admin_api.rooms import RoomService
+from admin_api.rooms import router as rooms_router
 
 
 async def render_api_error(request: Request, error: ApiError) -> JSONResponse:
@@ -60,10 +66,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.jwks_client = JwksClient(app.state.settings.oidc_jwks_url or "")
     app.state.enrollment_service = EnrollmentService(app.state.settings)
     app.state.agent_management_service = AgentManagementService(app.state.settings)
+    app.state.revocation_service = RevocationService(app.state.settings)
+    app.state.room_service = RoomService(app.state.settings)
     app.add_exception_handler(ApiError, render_api_error)
     app.add_exception_handler(RequestValidationError, render_validation_error)
     app.include_router(enrollment_router)
     app.include_router(agent_management_router)
+    app.include_router(revocation_router)
+    app.include_router(rooms_router)
+    if (
+        app.state.settings.environment == "development"
+        and app.state.settings.enable_local_oidc_harness
+    ):
+        app.mount(
+            "/admin",
+            StaticFiles(
+                directory=str(Path(__file__).parent / "dev_harness"),
+                html=True,
+            ),
+            name="local-oidc-harness",
+        )
 
     @app.middleware("http")
     async def add_request_id(request: Request, call_next) -> Response:

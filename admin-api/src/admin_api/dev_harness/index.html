@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Oryma — test OIDC local</title>
+    <style>
+      :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; }
+      body { margin: 0 auto; max-width: 760px; padding: 2rem 1rem; color: #17212b; }
+      h1, h2 { line-height: 1.2; }
+      .warning { padding: 1rem; border-left: 4px solid #b54708; background: #fff4e5; }
+      .actions, .row { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+      label { display: block; margin: .8rem 0; font-weight: 600; }
+      input, select { box-sizing: border-box; display: block; width: 100%; padding: .6rem; }
+      button { padding: .65rem 1rem; cursor: pointer; }
+      pre { overflow: auto; padding: 1rem; background: #f2f4f7; white-space: pre-wrap; overflow-wrap: anywhere; }
+      #result[hidden], #enrollment[hidden], #claims[hidden] { display: none; }
+      #status { min-height: 1.5em; }
+    </style>
+  </head>
+  <body>
+    <h1>Test local OIDC et enrôlement</h1>
+    <p class="warning">
+      Harnais temporaire de développement, pas une console de production. Il utilise Authorization
+      Code + PKCE S256 ; aucun secret client n’est utilisé. Le jeton reste en mémoire dans cet
+      onglet. La réponse d’enrôlement peut contenir un mot de passe temporaire : ne le partagez pas.
+    </p>
+
+    <p id="status" role="status" aria-live="polite"></p>
+    <div class="actions">
+      <button id="login" type="button">Connexion Keycloak (PKCE)</button>
+      <button id="clear" type="button" disabled>Effacer le jeton local</button>
+    </div>
+
+    <section id="claims" hidden>
+      <h2>Claims reçus (lecture indicative)</h2>
+      <p>Le serveur API effectue les vérifications faisant autorité.</p>
+      <pre id="claims-output"></pre>
+    </section>
+
+    <form id="enrollment" hidden>
+      <h2>Tester POST /api/v1/agents</h2>
+      <label>Identifiant Keycloak
+        <input name="identifiant" required minlength="3" maxlength="64" pattern="[A-Za-z0-9._-]+"
+               autocomplete="off">
+      </label>
+      <label>Nom complet
+        <input name="nom_complet" required maxlength="200" autocomplete="off">
+      </label>
+      <label>Code du ministère
+        <input name="ministere_code" required maxlength="64" value="DEV-DEMO" autocomplete="off">
+      </label>
+      <label>Fonction (facultatif)
+        <input name="fonction" maxlength="200" autocomplete="off">
+      </label>
+      <label>Rôle
+        <select name="role">
+          <option value="agent">agent</option>
+          <option value="admin">admin</option>
+        </select>
+      </label>
+      <button type="submit">Enrôler l’agent</button>
+    </form>
+
+    <section id="result" hidden>
+      <h2>Réponse API</h2>
+      <p>Si la réponse contient un mot de passe temporaire, transmettez-le par un canal convenu.</p>
+      <pre id="result-output"></pre>
+    </section>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

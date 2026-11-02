@@ -14,6 +14,14 @@ class Settings:
     keycloak_admin_client_id: str = "admin-api"
     keycloak_admin_client_secret: str | None = None
     matrix_server_name: str | None = None
+    synapse_admin_api_url: str = "http://synapse:8008"
+    synapse_admin_access_token: str | None = None
+    synapse_client_api_url: str = "http://synapse:8008"
+    synapse_room_service_matrix_id: str | None = None
+    synapse_room_service_access_token: str | None = None
+    demo_retention: bool = False
+    environment: str = "production"
+    enable_local_oidc_harness: bool = False
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -31,4 +39,16 @@ class Settings:
             keycloak_admin_client_id=os.getenv("KEYCLOAK_ADMIN_CLIENT_ID", "admin-api"),
             keycloak_admin_client_secret=os.getenv("KEYCLOAK_ADMIN_CLIENT_SECRET"),
             matrix_server_name=os.getenv("ORYMA_HOST"),
+            synapse_admin_api_url=os.getenv("SYNAPSE_ADMIN_API_URL", "http://synapse:8008"),
+            synapse_admin_access_token=os.getenv("SYNAPSE_ADMIN_ACCESS_TOKEN"),
+            synapse_client_api_url=os.getenv("SYNAPSE_CLIENT_API_URL", "http://synapse:8008"),
+            synapse_room_service_matrix_id=os.getenv("SYNAPSE_ROOM_SERVICE_MATRIX_ID"),
+            synapse_room_service_access_token=os.getenv("SYNAPSE_ROOM_SERVICE_ACCESS_TOKEN"),
+            demo_retention=os.getenv("DEMO_RETENTION", "false").strip().lower()
+            in {"1", "true", "yes", "on"},
+            environment=os.getenv("ORYMA_ENVIRONMENT", "production").strip().lower(),
+            enable_local_oidc_harness=os.getenv("ORYMA_ENABLE_LOCAL_OIDC_HARNESS", "false")
+            .strip()
+            .lower()
+            in {"1", "true", "yes", "on"},
         )

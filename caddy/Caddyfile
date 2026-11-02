@@ -17,6 +17,9 @@ https://{env.ORYMA_HOST} {
   @keycloak_cookie_check path /auth/realms/*/protocol/openid-connect/3p-cookies/*
   header @keycloak_cookie_check -X-Frame-Options
 
+  @admin_console path /admin /admin/*
+  reverse_proxy @admin_console admin-api:8080
+
   @admin_api path /api/*
   reverse_proxy @admin_api admin-api:8080
 

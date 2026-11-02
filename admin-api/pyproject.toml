@@ -29,7 +29,7 @@ admin-api-bootstrap-local = "admin_api.local_bootstrap:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-admin_api = ["sql_migrations/*.sql"]
+admin_api = ["sql_migrations/*.sql", "dev_harness/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

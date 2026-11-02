@@ -38,7 +38,19 @@ Caddy sait émettre un certificat interne pour un nom comme pour une IP.
 | `SYNAPSE_REGISTRATION_SECRET` | Création des comptes de service Synapse |
 | `KEYCLOAK_ADMIN_PASSWORD` | Compte d’administration Keycloak (console non exposée) |
 | `OIDC_SYNAPSE_SECRET` | Secret du client `synapse` |
-| `DEMO_RETENTION` | Active les durées d’expiration courtes pour la démonstration |
+| `DEMO_RETENTION` | `true` applique 5 min (Diffusion restreinte) et 2 min (Confidentiel), sinon 7 jours et 24 h |
+| `SYNAPSE_ADMIN_ACCESS_TOKEN` | Jeton du compte Synapse dédié à la révocation des agents |
+| `SYNAPSE_ROOM_SERVICE_MATRIX_ID` | Identifiant du compte Matrix non administrateur qui crée les salles |
+| `SYNAPSE_ROOM_SERVICE_ACCESS_TOKEN` | Jeton de ce compte de service, réservé à la création des salles |
+| `ORYMA_ENVIRONMENT` | `development` uniquement pour déclarer un environnement de développement ; Compose utilise `production` par défaut |
+| `ORYMA_ENABLE_LOCAL_BOOTSTRAP` | `true` uniquement pour initialiser explicitement une base locale de développement |
+| `ORYMA_ENABLE_LOCAL_OIDC_HARNESS` | `true` uniquement pour servir le harnais PKCE temporaire en développement |
+
+Le compte Synapse utilisé pour la révocation doit être distinct du compte de service des salles. L’API Admin Synapse nécessite un compte administrateur du homeserver ; réservez-le à `admin-api`, provisionnez son jeton hors du dépôt, puis renseignez `SYNAPSE_ADMIN_ACCESS_TOKEN` dans `.env` et redémarrez `admin-api`. Sans ce jeton, l’API démarre mais les étapes Synapse d’une révocation échouent explicitement. Ne placez jamais le jeton dans un fichier versionné, une commande conservée dans l’historique ou les journaux.
+
+Le compte des salles doit rester un utilisateur Matrix ordinaire, sans droits d’administration Synapse. Créez-le comme compte non administrateur avec le mécanisme d’inscription partagée Synapse, puis stockez son identifiant et son jeton dans les deux variables correspondantes de `.env`. Il ne doit pas recevoir de rôle d’administration ; l’API l’utilise uniquement pour créer une salle chiffrée, inviter les membres et quitter la salle. La suppression compensatoire d’une salle incomplète utilise séparément le jeton administrateur Synapse.
+
+`DEMO_RETENTION=true` raccourcit les durées appliquées aux nouvelles salles à 300 secondes (Diffusion restreinte) et 120 secondes (Confidentiel). L’instantané persisté dans `salles.duree_vie_secondes` correspond toujours à la durée réellement envoyée à Synapse. Laisser cette option désactivée hors démonstration ; les salles existantes ne sont pas modifiées.
 
 ## Installation (cible)
 
@@ -70,6 +82,20 @@ docker compose exec \
 La commande crée le ministère fictif `DEV-DEMO` et un premier admin actif lié aux identifiants fournis, dans une transaction. Elle est idempotente pour les mêmes valeurs ; elle refuse les identifiants déjà attribués, une configuration existante incompatible ou la présence d’un autre admin actif. Elle inscrit l’action dans `audit_log`. Aucun mot de passe ni jeton n’est demandé ou enregistré par cette commande.
 
 La commande refuse par défaut les environnements autres que `development`. Elle n’expose aucune route API et n’est pas un mécanisme d’initialisation de production : ne l’exécutez jamais sur une base partagée ou de production. L’UUID Keycloak peut être lu dans la fiche de l’utilisateur Keycloak ; l’identifiant Matrix doit correspondre au compte Matrix réellement provisionné.
+
+## Vérification OIDC locale (harnais temporaire)
+
+Le harnais n’est pas la console produit. Il est servi uniquement si `ORYMA_ENVIRONMENT=development` et `ORYMA_ENABLE_LOCAL_OIDC_HARNESS=true` sont définis dans le `.env` local ignoré par Git. Il réalise Authorization Code + PKCE S256 pour le client public `console`, affiche les claims utiles sans conserver l’access token après fermeture/rechargement de l’onglet, puis permet de tester l’appel authentifié à `POST /api/v1/agents`.
+
+```bash
+# Dans .env local uniquement :
+ORYMA_ENVIRONMENT=development
+ORYMA_ENABLE_LOCAL_OIDC_HARNESS=true
+
+docker compose up -d --build admin-api caddy
+```
+
+Ouvrir `https://${ORYMA_HOST}/admin/`, se connecter avec le compte administrateur de démonstration, vérifier `azp=console`, `aud` contenant `admin-api` et le rôle realm `admin`, puis tester l’enrôlement avec un identifiant fictif et le ministère `DEV-DEMO`. L’API reste l’autorité de validation du jeton. La réponse peut inclure le mot de passe temporaire du nouvel agent : le transmettre uniquement par le canal convenu et ne pas le copier dans les journaux ou un ticket. Après le test, remettre `ORYMA_ENABLE_LOCAL_OIDC_HARNESS=false` et `ORYMA_ENVIRONMENT=production`, puis redéployer `admin-api` et `caddy`. Ne jamais activer ce harnais sur une instance partagée ou de production.
 
 ## Réseaux, volumes et secrets
 

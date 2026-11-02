@@ -40,7 +40,7 @@ Toute divergence est corrigée dans la même pull request.
 | `POST /agents` (enrôlement) | EnrollmentService / B | Console | Accepté | OpenAPI + test d’intégration avec TOTP imposé |
 | `GET /agents`, `GET /agents/{id}` et `PATCH /agents/{id}/role` | AgentManagementService / B | Console | Implémenté | Tests de filtre, pagination, autorisation, changement de rôle et agent introuvable |
 | `POST /agents/{id}/revoke` | RevocationService / B | Console | Accepté | Test de révocation à deux appareils + test d’idempotence |
-| `POST /rooms` et `GET /rooms` | RoomService / B | Console | Accepté | Test de création de salle + purge à l’échéance |
+| `GET /levels`, `POST /rooms` et `GET /rooms` | RoomService / B | Console | Implémenté | Test d’intégration de création chiffrée, invitation et purge à l’échéance |
 | `GET /audit` | AuditLedger / B | Console | Proposé | Test en ajout seul |
 | `GET /health` | AdminService / B | Deployment / A | Proposé | Contrôle d’état dans Compose |
 | Royaume Keycloak (clients et rôles) | IdentityProvider / A | AdminService / B | Accepté | `realm-export.json` + test de connexion |

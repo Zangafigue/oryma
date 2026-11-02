@@ -128,7 +128,7 @@ Aucun mot de passe ni code TOTP n’est stocké ici.
 
 ### `niveaux_classification`
 
-Valeurs de départ : `DIFFUSION_RESTREINTE`, 7 jours (604 800 s) ; `CONFIDENTIEL`, 24 heures (86 400 s). `transfert_interdit` est **indicatif** : il décrit une règle d’usage affichée dans l’interface et n’empêche pas techniquement la copie d’un message par un destinataire. Pour la démonstration, une variable d’environnement ramène les durées à quelques minutes.
+Valeurs de départ : `DIFFUSION_RESTREINTE`, 7 jours (604 800 s) ; `CONFIDENTIEL`, 24 heures (86 400 s). `transfert_interdit` est **indicatif** : il décrit une règle d’usage affichée dans l’interface et n’empêche pas techniquement la copie d’un message par un destinataire. Pour la démonstration, `DEMO_RETENTION=true` applique 5 minutes et 2 minutes aux nouvelles salles, respectivement.
 
 ### `salles`
 

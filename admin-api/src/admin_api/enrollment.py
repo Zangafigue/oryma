@@ -355,6 +355,35 @@ class KeycloakAdminClient:
         except (httpx.HTTPError, ValueError, TypeError) as error:
             raise IdentityProviderUnavailable from error
 
+    async def disable_user(self, keycloak_id: UUID) -> None:
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                token = await self._service_token(client)
+                response = await client.put(
+                    f"{self._admin_base_url}/users/{keycloak_id}",
+                    headers={"Authorization": f"Bearer {token}"},
+                    json={"enabled": False},
+                )
+                self._require_status(response, 204)
+        except IdentityProviderUnavailable:
+            raise
+        except (httpx.HTTPError, ValueError, TypeError) as error:
+            raise IdentityProviderUnavailable from error
+
+    async def logout_user_sessions(self, keycloak_id: UUID) -> None:
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                token = await self._service_token(client)
+                response = await client.post(
+                    f"{self._admin_base_url}/users/{keycloak_id}/logout",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+                self._require_status(response, 204)
+        except IdentityProviderUnavailable:
+            raise
+        except (httpx.HTTPError, ValueError, TypeError) as error:
+            raise IdentityProviderUnavailable from error
+
     async def _get_realm_role(
         self,
         client: httpx.AsyncClient,

@@ -89,12 +89,21 @@ services:
     restart: unless-stopped
     environment:
       ADMINAPI_DATABASE_URL: postgresql://adminapi:${ADMINAPI_DB_PASSWORD:?Configure ADMINAPI_DB_PASSWORD in .env}@postgres:5432/adminapi
+      ORYMA_ENVIRONMENT: ${ORYMA_ENVIRONMENT:-production}
+      ORYMA_ENABLE_LOCAL_BOOTSTRAP: ${ORYMA_ENABLE_LOCAL_BOOTSTRAP:-false}
+      ORYMA_ENABLE_LOCAL_OIDC_HARNESS: ${ORYMA_ENABLE_LOCAL_OIDC_HARNESS:-false}
       KEYCLOAK_HEALTHCHECK_URL: http://keycloak:9000/auth/health/ready
       KEYCLOAK_ISSUER: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth/realms/oryma
       KEYCLOAK_JWKS_INTERNAL_URL: http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs
       KEYCLOAK_ADMIN_CLIENT_ID: admin-api
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${ADMIN_API_OIDC_SECRET:?Configure ADMIN_API_OIDC_SECRET in .env}
       SYNAPSE_HEALTHCHECK_URL: http://synapse:8008/_matrix/client/versions
+      SYNAPSE_ADMIN_API_URL: http://synapse:8008
+      SYNAPSE_ADMIN_ACCESS_TOKEN: ${SYNAPSE_ADMIN_ACCESS_TOKEN:-}
+      SYNAPSE_CLIENT_API_URL: http://synapse:8008
+      SYNAPSE_ROOM_SERVICE_MATRIX_ID: ${SYNAPSE_ROOM_SERVICE_MATRIX_ID:-}
+      SYNAPSE_ROOM_SERVICE_ACCESS_TOKEN: ${SYNAPSE_ROOM_SERVICE_ACCESS_TOKEN:-}
+      DEMO_RETENTION: ${DEMO_RETENTION:-false}
       OIDC_ISSUER: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth/realms/oryma
       OIDC_AUDIENCE: admin-api
       OIDC_CLIENT_ID: console
