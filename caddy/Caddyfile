@@ -26,6 +26,11 @@ https://{env.ORYMA_HOST} {
   @keycloak path /auth/*
   reverse_proxy @keycloak keycloak:8080
 
+  # Keycloak utilise ces iframes same-origin pour vérifier ses cookies et sa session.
+  # La politique DENY globale empêcherait ces contrôles de se charger dans Chrome.
+  @keycloak_session_iframes path /auth/realms/*/protocol/openid-connect/3p-cookies/* /auth/realms/*/protocol/openid-connect/login-status-iframe.html
+  header @keycloak_session_iframes -X-Frame-Options
+
   reverse_proxy element:80
 }
 
