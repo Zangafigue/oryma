@@ -1,9 +1,11 @@
 import asyncio
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from admin_api.agent_management import AgentManagementService
 from admin_api.agent_management import router as agent_management_router
@@ -72,6 +74,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(agent_management_router)
     app.include_router(revocation_router)
     app.include_router(rooms_router)
+    if (
+        app.state.settings.environment == "development"
+        and app.state.settings.enable_local_oidc_harness
+    ):
+        app.mount(
+            "/admin",
+            StaticFiles(
+                directory=str(Path(__file__).parent / "dev_harness"),
+                html=True,
+            ),
+            name="local-oidc-harness",
+        )
 
     @app.middleware("http")
     async def add_request_id(request: Request, call_next) -> Response:

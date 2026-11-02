@@ -20,6 +20,8 @@ class Settings:
     synapse_room_service_matrix_id: str | None = None
     synapse_room_service_access_token: str | None = None
     demo_retention: bool = False
+    environment: str = "production"
+    enable_local_oidc_harness: bool = False
 
     @classmethod
     def from_environment(cls) -> "Settings":
@@ -43,5 +45,10 @@ class Settings:
             synapse_room_service_matrix_id=os.getenv("SYNAPSE_ROOM_SERVICE_MATRIX_ID"),
             synapse_room_service_access_token=os.getenv("SYNAPSE_ROOM_SERVICE_ACCESS_TOKEN"),
             demo_retention=os.getenv("DEMO_RETENTION", "false").strip().lower()
+            in {"1", "true", "yes", "on"},
+            environment=os.getenv("ORYMA_ENVIRONMENT", "production").strip().lower(),
+            enable_local_oidc_harness=os.getenv("ORYMA_ENABLE_LOCAL_OIDC_HARNESS", "false")
+            .strip()
+            .lower()
             in {"1", "true", "yes", "on"},
         )

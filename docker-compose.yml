@@ -91,6 +91,7 @@ services:
       ADMINAPI_DATABASE_URL: postgresql://adminapi:${ADMINAPI_DB_PASSWORD:?Configure ADMINAPI_DB_PASSWORD in .env}@postgres:5432/adminapi
       ORYMA_ENVIRONMENT: ${ORYMA_ENVIRONMENT:-production}
       ORYMA_ENABLE_LOCAL_BOOTSTRAP: ${ORYMA_ENABLE_LOCAL_BOOTSTRAP:-false}
+      ORYMA_ENABLE_LOCAL_OIDC_HARNESS: ${ORYMA_ENABLE_LOCAL_OIDC_HARNESS:-false}
       KEYCLOAK_HEALTHCHECK_URL: http://keycloak:9000/auth/health/ready
       KEYCLOAK_ISSUER: https://${ORYMA_HOST:?Configure ORYMA_HOST in .env}/auth/realms/oryma
       KEYCLOAK_JWKS_INTERNAL_URL: http://keycloak:8080/auth/realms/oryma/protocol/openid-connect/certs
