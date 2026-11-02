@@ -15,7 +15,8 @@
     ]
   },
   "requiredActions": [
-    {"alias": "CONFIGURE_TOTP", "name": "Configurer OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": true, "priority": 10}
+    {"alias": "CONFIGURE_TOTP", "name": "Configurer OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": true, "priority": 10},
+    {"alias": "UPDATE_PASSWORD", "name": "Mettre à jour le mot de passe", "providerId": "UPDATE_PASSWORD", "enabled": true, "defaultAction": false, "priority": 30}
   ],
   "requiredCredentials": ["password", "otp"],
   "otpPolicyType": "totp",

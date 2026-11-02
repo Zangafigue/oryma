@@ -8,8 +8,11 @@ if [ ! -r "$ORYMA_CADDY_CA" ]; then
   exit 1
 fi
 
-cp "$ORYMA_CADDY_CA" /usr/local/share/ca-certificates/oryma-caddy.crt
+install -m 644 "$ORYMA_CADDY_CA" /usr/local/share/ca-certificates/oryma-caddy.crt
 update-ca-certificates >/dev/null
+# Le processus Synapse n'a pas accès au fichier Caddy monté en mode 0600.
+# Il doit donc utiliser la copie publique de la CA pour ses appels OIDC HTTPS.
+export SSL_CERT_FILE=/usr/local/share/ca-certificates/oryma-caddy.crt
 
 if [ ! -f /data/.oryma-config-ready ]; then
   /start.py generate
@@ -32,5 +35,12 @@ if [ ! -f /data/.oryma-config-ready ]; then
 
   touch /data/.oryma-config-ready
 fi
+
+# Conserver les endpoints OIDC HTTPS canoniques si le fichier a été généré
+# avant une correction de configuration.
+sed -i \
+  -e "s|^    token_endpoint: .*|    token_endpoint: \"https://${ORYMA_HOST}/auth/realms/oryma/protocol/openid-connect/token\"|" \
+  -e "s|^    jwks_uri: .*|    jwks_uri: \"https://${ORYMA_HOST}/auth/realms/oryma/protocol/openid-connect/certs\"|" \
+  /data/homeserver.yaml
 
 exec /start.py run
