@@ -42,6 +42,12 @@ def test_local_oidc_harness_is_only_served_when_explicitly_enabled(
     assert index_response.status_code == expected_status
     assert script_response.status_code == expected_status
     if expected_status == 200:
-        assert "Test local OIDC, enrôlement et révocation" in index_response.text
+        assert "Test local OIDC, agents, révocation et salles" in index_response.text
         assert "Tester POST /api/v1/agents/{id}/revoke" in index_response.text
         assert 'code_challenge_method: "S256"' in script_response.text
+        assert "GET /api/v1/levels" in index_response.text
+        assert "POST /api/v1/rooms" in index_response.text
+        assert "GET /api/v1/rooms" in index_response.text
+        assert '"/api/v1/levels"' in script_response.text
+        assert '"/api/v1/rooms"' in script_response.text
+        assert "duree_vie_secondes" in script_response.text

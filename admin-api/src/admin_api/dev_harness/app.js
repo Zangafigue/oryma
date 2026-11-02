@@ -16,6 +16,15 @@ const revokeForm = document.querySelector("#revoke-form");
 const revokeResultSection = document.querySelector("#revoke-result");
 const revokeStepsList = document.querySelector("#revoke-steps");
 const revokeOutput = document.querySelector("#revoke-output");
+const roomsTools = document.querySelector("#rooms-tools");
+const loadLevelsButton = document.querySelector("#load-levels");
+const levelsOutput = document.querySelector("#levels-output");
+const roomForm = document.querySelector("#room-form");
+const roomResultSection = document.querySelector("#room-result");
+const roomSummary = document.querySelector("#room-summary");
+const roomOutput = document.querySelector("#room-output");
+const loadRoomsButton = document.querySelector("#load-rooms");
+const roomsOutput = document.querySelector("#rooms-output");
 
 function setStatus(message) {
   status.textContent = message;
@@ -183,6 +192,7 @@ async function finishLogin() {
   clearButton.disabled = false;
   enrollmentForm.hidden = false;
   revokeForm.hidden = false;
+  roomsTools.hidden = false;
   showTokenClaims(accessToken);
 }
 
@@ -195,8 +205,16 @@ clearButton.addEventListener("click", () => {
   resultSection.hidden = true;
   revokeForm.hidden = true;
   revokeResultSection.hidden = true;
+  roomsTools.hidden = true;
   revokeOutput.textContent = "";
   revokeStepsList.innerHTML = "";
+  levelsOutput.textContent = "";
+  roomForm.reset();
+  roomResultSection.hidden = true;
+  roomSummary.textContent = "";
+  roomOutput.textContent = "";
+  roomsOutput.textContent = "";
+  roomForm.elements.niveau.replaceChildren(new Option("Chargez les niveaux…", ""));
   clearButton.disabled = true;
   loginButton.disabled = false;
   setStatus("Jeton effacé de la mémoire de cet onglet.");
@@ -301,6 +319,139 @@ revokeForm.addEventListener("submit", async (event) => {
     setStatus(error instanceof Error ? error.message : "Appel de l’API impossible.");
   } finally {
     submitButton.disabled = false;
+  }
+});
+
+loadLevelsButton.addEventListener("click", async () => {
+  if (!accessToken) {
+    setStatus("Reconnectez-vous avant de charger les niveaux.");
+    return;
+  }
+  loadLevelsButton.disabled = true;
+  setStatus("Chargement de GET /api/v1/levels…");
+  try {
+    const response = await fetch("/api/v1/levels", {
+      method: "GET",
+      credentials: "omit",
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const payload = await readJson(response);
+    levelsOutput.textContent = JSON.stringify(payload, null, 2);
+    if (!response.ok) {
+      throw new Error(`Chargement des niveaux refusé (HTTP ${response.status}).`);
+    }
+
+    const levels = payload.data;
+    if (!Array.isArray(levels)) {
+      throw new Error("La réponse des niveaux est invalide.");
+    }
+    const options = [new Option("Sélectionnez un niveau…", "")];
+    for (const level of levels) {
+      if (typeof level.code !== "string" || typeof level.libelle !== "string") continue;
+      options.push(new Option(`${level.libelle} (${level.code})`, level.code));
+    }
+    roomForm.elements.niveau.replaceChildren(...options);
+    setStatus(`${levels.length} niveau(x) chargé(s).`);
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : "Chargement des niveaux impossible.");
+  } finally {
+    loadLevelsButton.disabled = false;
+  }
+});
+
+roomForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!accessToken) {
+    setStatus("Reconnectez-vous avant de créer une salle.");
+    return;
+  }
+
+  const values = new FormData(roomForm);
+  const membersText = String(values.get("membres") || "").trim();
+  const members = membersText ? membersText.split(/[,\s]+/).filter(Boolean) : [];
+  const requestBody = {
+    nom: String(values.get("nom") || "").trim(),
+    niveau: String(values.get("niveau") || ""),
+    membres: members,
+  };
+  const submitButton = roomForm.querySelector('button[type="submit"]');
+  submitButton.disabled = true;
+  roomResultSection.hidden = false;
+  roomSummary.textContent = "";
+  roomOutput.textContent = "";
+  setStatus("Appel authentifié de POST /api/v1/rooms…");
+
+  try {
+    const response = await fetch("/api/v1/rooms", {
+      method: "POST",
+      credentials: "omit",
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
+    const payload = await readJson(response);
+    const data = payload.data;
+    if (response.ok && data && typeof data === "object") {
+      roomSummary.textContent = [
+        `room_id : ${data.room_id ?? "—"}`,
+        `Nom : ${data.nom ?? "—"}`,
+        `Niveau : ${data.niveau ?? "—"}`,
+        `Durée : ${data.duree_vie_secondes ?? "—"} secondes`,
+      ].join("\n");
+    } else {
+      roomOutput.textContent = JSON.stringify(payload.error ?? payload, null, 2);
+    }
+    setStatus(
+      response.ok
+        ? `Salle créée : HTTP ${response.status}.`
+        : `Création de salle en erreur : HTTP ${response.status}.`,
+    );
+  } catch (error) {
+    roomOutput.textContent = JSON.stringify(
+      { erreur: error instanceof Error ? error.message : "Appel de l’API impossible." },
+      null,
+      2,
+    );
+    setStatus(error instanceof Error ? error.message : "Création de salle impossible.");
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+loadRoomsButton.addEventListener("click", async () => {
+  if (!accessToken) {
+    setStatus("Reconnectez-vous avant de charger les salles.");
+    return;
+  }
+  loadRoomsButton.disabled = true;
+  setStatus("Chargement de GET /api/v1/rooms…");
+  try {
+    const response = await fetch("/api/v1/rooms", {
+      method: "GET",
+      credentials: "omit",
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const payload = await readJson(response);
+    roomsOutput.textContent = JSON.stringify(payload, null, 2);
+    setStatus(
+      response.ok
+        ? `Salles chargées : HTTP ${response.status}.`
+        : `Chargement des salles en erreur : HTTP ${response.status}.`,
+    );
+  } catch (error) {
+    roomsOutput.textContent = JSON.stringify(
+      { erreur: error instanceof Error ? error.message : "Appel de l’API impossible." },
+      null,
+      2,
+    );
+    setStatus(error instanceof Error ? error.message : "Chargement des salles impossible.");
+  } finally {
+    loadRoomsButton.disabled = false;
   }
 });
 

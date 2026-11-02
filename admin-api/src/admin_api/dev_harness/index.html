@@ -15,12 +15,12 @@
       input, select { box-sizing: border-box; display: block; width: 100%; padding: .6rem; }
       button { padding: .65rem 1rem; cursor: pointer; }
       pre { overflow: auto; padding: 1rem; background: #f2f4f7; white-space: pre-wrap; overflow-wrap: anywhere; }
-      #result[hidden], #enrollment[hidden], #claims[hidden] { display: none; }
+      [hidden] { display: none !important; }
       #status { min-height: 1.5em; }
     </style>
   </head>
   <body>
-    <h1>Test local OIDC, enrôlement et révocation</h1>
+    <h1>Test local OIDC, agents, révocation et salles</h1>
     <p class="warning">
       Harnais temporaire de développement, pas une console de production. Il utilise Authorization
       Code + PKCE S256 ; aucun secret client n’est utilisé. Le jeton d’accès reste seulement en
@@ -88,6 +88,38 @@
       <h2>Étapes de révocation</h2>
       <ol id="revoke-steps"></ol>
       <pre id="revoke-output"></pre>
+    </section>
+
+    <section id="rooms-tools" hidden>
+      <h2>Niveaux de classification</h2>
+      <button id="load-levels" type="button">Charger GET /api/v1/levels</button>
+      <pre id="levels-output"></pre>
+
+      <form id="room-form">
+        <h2>Créer une salle — POST /api/v1/rooms</h2>
+        <label>Nom
+          <input name="nom" required maxlength="200" autocomplete="off">
+        </label>
+        <label>Niveau
+          <select name="niveau" required>
+            <option value="">Chargez les niveaux…</option>
+          </select>
+        </label>
+        <label>UUID des membres (un par ligne ou séparés par des virgules)
+          <textarea name="membres" rows="4" autocomplete="off"></textarea>
+        </label>
+        <button type="submit">Créer la salle</button>
+      </form>
+
+      <section id="room-result" hidden>
+        <h2>Résultat de création</h2>
+        <p id="room-summary"></p>
+        <pre id="room-output"></pre>
+      </section>
+
+      <h2>Salles enregistrées</h2>
+      <button id="load-rooms" type="button">Charger GET /api/v1/rooms</button>
+      <pre id="rooms-output"></pre>
     </section>
 
     <script type="module" src="./app.js"></script>
