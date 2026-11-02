@@ -73,11 +73,13 @@ Le rôle est strictement limité à `admin` ou `agent`. Si une étape échoue ap
 
 ### GET `/agents`
 
-Rôle : `admin`. Filtres : `statut`, `ministere_code`. Pagination par curseur.
+Rôle : `admin` actif. Filtres optionnels : `statut` (`actif` ou `revoque`), `ministere_code`. Pagination par curseur opaque (`page_size` de 1 à 100, 50 par défaut).
+
+Réponse : `{ "data": { "items": [Agent], "next_cursor": "…" }, "request_id": "…" }`. `next_cursor` est nul à la dernière page. Les agents sont parcourus dans l’ordre stable de leur UUID.
 
 ### GET `/agents/{agent_id}`
 
-Rôle : `admin`. Erreur : `ERR-031`.
+Rôle : `admin` actif. Retourne un `Agent`. Erreur `ERR-031` si l’agent est introuvable.
 
 ### PATCH `/agents/{agent_id}/role`
 
