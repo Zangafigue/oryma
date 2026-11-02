@@ -307,6 +307,92 @@ class KeycloakAdminClient:
                 keycloak_id,
             )
 
+    async def change_role(
+        self,
+        keycloak_id: UUID,
+        current_role: AgentRole,
+        new_role: AgentRole,
+    ) -> None:
+        if current_role == new_role:
+            return
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                token = await self._service_token(client)
+                headers = {"Authorization": f"Bearer {token}"}
+                current = await self._get_realm_role(client, headers, current_role)
+                new = await self._get_realm_role(client, headers, new_role)
+                try:
+                    response = await client.post(
+                        f"{self._admin_base_url}/users/{keycloak_id}/role-mappings/realm",
+                        headers=headers,
+                        json=[new],
+                    )
+                    self._require_status(response, 204)
+                    response = await client.request(
+                        "DELETE",
+                        f"{self._admin_base_url}/users/{keycloak_id}/role-mappings/realm",
+                        headers=headers,
+                        json=[current],
+                    )
+                    self._require_status(response, 204)
+                except Exception as error:
+                    try:
+                        await self._restore_role_mapping(
+                            client,
+                            headers,
+                            keycloak_id,
+                            current,
+                            new,
+                        )
+                    except Exception as compensation_error:
+                        raise IdentityCompensationFailed from compensation_error
+                    raise IdentityProviderUnavailable from error
+        except (
+            IdentityProviderUnavailable,
+            IdentityCompensationFailed,
+        ):
+            raise
+        except (httpx.HTTPError, ValueError, TypeError) as error:
+            raise IdentityProviderUnavailable from error
+
+    async def _get_realm_role(
+        self,
+        client: httpx.AsyncClient,
+        headers: dict[str, str],
+        role_name: AgentRole,
+    ) -> dict[str, object]:
+        response = await client.get(
+            f"{self._admin_base_url}/roles/{role_name}",
+            headers=headers,
+        )
+        self._require_status(response, 200)
+        role = response.json()
+        if not isinstance(role, dict) or role.get("name") != role_name:
+            raise ValueError("Keycloak returned an invalid realm role")
+        return role
+
+    async def _restore_role_mapping(
+        self,
+        client: httpx.AsyncClient,
+        headers: dict[str, str],
+        keycloak_id: UUID,
+        current_role: dict[str, object],
+        new_role: dict[str, object],
+    ) -> None:
+        response = await client.post(
+            f"{self._admin_base_url}/users/{keycloak_id}/role-mappings/realm",
+            headers=headers,
+            json=[current_role],
+        )
+        self._require_status(response, 204)
+        response = await client.request(
+            "DELETE",
+            f"{self._admin_base_url}/users/{keycloak_id}/role-mappings/realm",
+            headers=headers,
+            json=[new_role],
+        )
+        self._require_status(response, 204)
+
     async def _delete_user_by_username(
         self,
         client: httpx.AsyncClient,

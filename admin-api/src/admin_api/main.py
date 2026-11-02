@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from admin_api.agent_management import AgentManagementService
+from admin_api.agent_management import router as agent_management_router
 from admin_api.auth import JwksClient
 from admin_api.config import Settings
 from admin_api.enrollment import EnrollmentService
@@ -57,9 +59,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings or Settings.from_environment()
     app.state.jwks_client = JwksClient(app.state.settings.oidc_jwks_url or "")
     app.state.enrollment_service = EnrollmentService(app.state.settings)
+    app.state.agent_management_service = AgentManagementService(app.state.settings)
     app.add_exception_handler(ApiError, render_api_error)
     app.add_exception_handler(RequestValidationError, render_validation_error)
     app.include_router(enrollment_router)
+    app.include_router(agent_management_router)
 
     @app.middleware("http")
     async def add_request_id(request: Request, call_next) -> Response:

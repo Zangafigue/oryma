@@ -38,6 +38,7 @@ Toute divergence est corrigée dans la même pull request.
 |---|---|---|---|---|
 | Authentification par jeton Keycloak | AdminService / B | Console | Accepté | Test jeton valide, invalide, expiré, mauvaise audience et mauvais rôle |
 | `POST /agents` (enrôlement) | EnrollmentService / B | Console | Accepté | OpenAPI + test d’intégration avec TOTP imposé |
+| `GET /agents`, `GET /agents/{id}` et `PATCH /agents/{id}/role` | AgentManagementService / B | Console | Implémenté | Tests de filtre, pagination, autorisation, changement de rôle et agent introuvable |
 | `POST /agents/{id}/revoke` | RevocationService / B | Console | Accepté | Test de révocation à deux appareils + test d’idempotence |
 | `POST /rooms` et `GET /rooms` | RoomService / B | Console | Accepté | Test de création de salle + purge à l’échéance |
 | `GET /audit` | AuditLedger / B | Console | Proposé | Test en ajout seul |

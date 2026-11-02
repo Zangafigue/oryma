@@ -73,15 +73,17 @@ Le rôle est strictement limité à `admin` ou `agent`. Si une étape échoue ap
 
 ### GET `/agents`
 
-Rôle : `admin`. Filtres : `statut`, `ministere_code`. Pagination par curseur.
+Rôle : `admin` actif. Filtres optionnels : `statut` (`actif` ou `revoque`), `ministere_code`. Pagination par curseur opaque (`page_size` de 1 à 100, 50 par défaut).
+
+Réponse : `{ "data": { "items": [Agent], "next_cursor": "…" }, "request_id": "…" }`. `next_cursor` est nul à la dernière page. Les agents sont parcourus dans l’ordre stable de leur UUID.
 
 ### GET `/agents/{agent_id}`
 
-Rôle : `admin`. Erreur : `ERR-031`.
+Rôle : `admin` actif. Retourne un `Agent`. Erreur `ERR-031` si l’agent est introuvable.
 
 ### PATCH `/agents/{agent_id}/role`
 
-Rôle : `admin`. Corps `{ "role": "admin" }`. Audit `CHANGEMENT_ROLE`.
+Rôle : `admin` actif. Corps strict : `{ "role": "admin" }` (valeurs permises : `admin`, `agent`). Le service remplace le rôle realm Keycloak puis met à jour `agents` et écrit l’audit `CHANGEMENT_ROLE` dans une transaction. Si l’écriture en base échoue après la mise à jour Keycloak, le rôle Keycloak est compensé ; un échec de compensation est signalé en `ERR-500`. Une demande conservant le rôle courant est idempotente et ne crée pas d’entrée d’audit. Erreurs : `ERR-013`, `ERR-014`, `ERR-023`, `ERR-031`, `ERR-500`.
 
 ### POST `/agents/{agent_id}/revoke`
 
